@@ -374,7 +374,7 @@ class Item:
                 and self.__width > 0 \
                 and self.__height > 0:
             image = []
-            if self.device.control_host_type == 0:
+            if self.device.control_host_type == Controller.ANYWHERE:
                 tree = xml.dom.minidom.parseString(self.device.xml_string)
                 for node in tree.documentElement.childNodes:
                     for n in node.childNodes:
@@ -770,13 +770,7 @@ class Item:
         :return: 成功返回True，否则为False
         """
         if self.exist(timeout):
-            if (self.rect[len(self.rect) - 1][1] - self.rect[0][1] + 1) \
-                    * (self.rect[len(self.rect) - 1][0] - self.rect[0][0] + 1) == len(self.rect):
-                x = self.rect[0][1] + int((self.rect[len(self.rect) - 1][1] - self.rect[0][1] + 1) / 2)
-                y = self.rect[0][0] + int((self.rect[len(self.rect) - 1][0] - self.rect[0][0] + 1) / 2)
-                self.device.click(Point(x, y))
-                return True
-            self.device.click(Point(self.rect[100][1], self.rect[100][0]), delay)
+            self.device.click(Point(self.rect[0][1]+1, self.rect[0][0]+1), delay)
             return True
         return False
 

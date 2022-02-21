@@ -50,7 +50,7 @@ def _web_driver_daemon(main_pid, wb_pid, parent_pid):
     main_process = psutil.Process(main_pid)
     wb_process = psutil.Process(wb_pid)
     while main_process.is_running():
-        time.sleep(0.5)
+        time.sleep(3)
     if wb_process.is_running():
         wb_process.kill()
     exit(0)
@@ -79,8 +79,8 @@ class Device(Events):
     :ivar control_host_type: 控制端平台类型，枚举类型Controller
     """
     con = Connection()
-    __osVersion = ""
-    __serialNumber = ""
+    __os_version = ""
+    __serial_number = ""
     xml_string = ""
     __xpath_file = "./xpath_list.ini"
     __screenshots = "./screenshots/"
@@ -105,8 +105,8 @@ class Device(Events):
         self.con.port = port
         self.con.connect()
         self.__path = os.path.realpath(__file__).split(os.path.basename(__file__))[0]
-        self.__serialNumber = str(self.con.get(path="getSerialNumber").read(), 'utf-8')
-        self.__osVersion = str(self.con.get(path="getOsVersion").read(), 'utf-8')
+        self.__serial_number = str(self.con.get(path="getSerialNumber").read(), 'utf-8')
+        self.__os_version = str(self.con.get(path="getOsVersion").read(), 'utf-8')
         self.__set_display_size()
         if _main:
             self.__check_platform()
@@ -334,8 +334,8 @@ class Device(Events):
                              scale: float = 1) -> str:
         """
         获取指定位置、大小及状态的范围截图。\n
-        :param cx: 范围旋转缩放前的横坐标
-        :param cy: 范围旋转缩放前的纵坐标
+        :param cx: 范围旋转缩放前的中心点横坐标
+        :param cy: 范围旋转缩放前的中心点纵坐标
         :param width: 范围旋转缩放前的宽度
         :param height: 范围旋转缩放前的高度
         :param rotation: 顺时针旋转角度
@@ -394,14 +394,14 @@ class Device(Events):
         获取SyberOS系统版本。\n
         :return: 系统版本字符串
         """
-        return self.__osVersion
+        return self.__os_version
 
     def serial_number(self) -> str:
         """
         获取当前设备硬件序列号。\n
         :return: 序列号字符串
         """
-        return self.__serialNumber
+        return self.__serial_number
 
     def find_item_by_xpath_key(self, sopid: str, xpath_key: str) -> Item:
         """
