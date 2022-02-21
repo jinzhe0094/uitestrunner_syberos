@@ -46,6 +46,8 @@ class WatchWorker:
                 self.__get_list()
                 self.device.refresh_layout()
                 for watcher in self.__watcher_list:
+                    if not self.__watcher_list['is_run']:
+                        continue
                     flag = 0
                     for xpath in watcher['xpath_list']:
                         if self.device.find_item_by_xpath(xpath['sop_id'], xpath['xpath']).exist(0):
@@ -61,6 +63,8 @@ class WatchWorker:
                                     self.device.home()
                                 elif watcher['active'] == WatcherActive.LAUNCH:
                                     self.device.launch(watcher['active_sop_id'], watcher['active_ui_app_id'])
+                                elif watcher['active'] == WatcherActive.STOP:
+                                    self.device.close(watcher['active_sop_id'], watcher['active_ui_app_id'])
             except Exception as e:
                 print(e)
                 main_process.resume()
@@ -152,6 +156,19 @@ class WatchContext:
         self.__watcher_data['active_ui_app_id'] = ui_app_id
         self.__push()
 
+    def stop(self, sop_id: str, ui_app_id: str) -> None:
+        """
+        如果所有when()接口设置的判断条件均为真时，执行停止APP操作。\n
+        :param sop_id: 要停止的设备应用sopid
+        :param ui_app_id: 要停止的设备应用uiappid
+        :return: 无
+        """
+        self.__watcher_data['active'] = WatcherActive.STOP
+        self.__watcher_data['active_sop_id'] = sop_id
+        self.__watcher_data['active_ui_app_id'] = ui_app_id
+        self.__push()
+
     def __push(self):
+        self.__watcher_data['is_run'] = False
         self.device.watcher_list.append(self.__watcher_data)
         self.device.push_watcher_data()

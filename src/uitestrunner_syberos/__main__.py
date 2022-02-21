@@ -38,6 +38,10 @@ if pkg_resources.resource_exists(__name__, sop_name):
     scp_client.put("./server.sop", "/tmp/")
 
     print("push guiAutoTest_support to device and launch it")
-    ssh_client.exec_command("ins-tool -iu /tmp/server.sop && dbus-send --system --print-reply --dest=com.syberos.iomanager /com/syberos/compositor/IOManager com.syberos.compositor.IOManager.sendAppData string:\"$(echo -e \"PowerLaunchRunApp\t0\tcom.syberos.guiAutoTest_support\tguiAutoTest_support\t\")\"")
+    ssh_client.exec_command("ins-tool -iu /tmp/server.sop && dbus-send --system --print-reply "
+                            "--dest=com.syberos.iomanager /com/syberos/compositor/IOManager co"
+                            "m.syberos.compositor.IOManager.sendAppData string:\"$(echo -e \"P"
+                            "owerLaunchRunApp\t0\tcom.syberos.guiAutoTest_support\tguiAutoTest"
+                            "_support\t\")\"")
 
     ssh_client.close()

@@ -92,7 +92,7 @@ class Events:
         :return: 成功返回True，否则为False
         """
         return self.__reply_status_check(self.device.con.get(path="setDisplayState", args="state=0")) and \
-               self.__reply_status_check(self.device.con.get(path="setDisplayState", args="state=2"))
+            self.__reply_status_check(self.device.con.get(path="setDisplayState", args="state=2"))
 
     def get_display_state(self) -> DisplayState:
         """
@@ -137,7 +137,8 @@ class Events:
         :param text: 文本字符串
         :return: 成功返回True，否则为False
         """
-        return self.__reply_status_check(self.device.con.get(path="sendCommitString", args="str=" + urllib.parse.quote(text)))
+        return self.__reply_status_check(
+            self.device.con.get(path="sendCommitString", args="str=" + urllib.parse.quote(text)))
 
     def click(self, point: Point, delay: int = 0) -> bool:
         """
@@ -146,7 +147,9 @@ class Events:
         :param delay: 点击延时时间(单位:毫秒)，默认无延时
         :return: 成功返回True，否则为False
         """
-        return self.__reply_status_check(self.device.con.get(path="sendTouchEvent", args="points=" + str(point.x) + "|" + str(point.y) + "&delay=" + str(delay)))
+        return self.__reply_status_check(self.device.con.get(path="sendTouchEvent", args="points=" + str(point.x)
+                                                                                         + "|" + str(point.y)
+                                                                                         + "&delay=" + str(delay)))
 
     def multi_click(self, points: List[Point], delay: int = 0) -> bool:
         """
@@ -157,10 +160,11 @@ class Events:
         """
         args = ""
         for point in points:
-            args += str(point[0].x) + "|" + str(point[1].y)
+            args += str(point.x) + "|" + str(point.y)
             if points.index(point) != len(points) - 1:
                 args += ","
-        return self.__reply_status_check(self.device.con.get(path="sendTouchEvent", args="points=" + args + "&delay=" + str(delay)))
+        return self.__reply_status_check(self.device.con.get(path="sendTouchEvent", args="points=" + args
+                                                                                         + "&delay=" + str(delay)))
 
     def swipe(self, p1: Point, p2: Point) -> bool:
         """
@@ -169,7 +173,10 @@ class Events:
         :param p2: 坐标点类Point对象，终点
         :return: 成功返回True，否则为False
         """
-        return self.__reply_status_check(self.device.con.get(path="sendSlideEvent", args="sliders=" + str(p1.x) + "|" + str(p1.y) + "->" + str(p2.x) + "|" + str(p2.y)))
+        return self.__reply_status_check(self.device.con.get(path="sendSlideEvent", args="sliders=" + str(p1.x)
+                                                                                         + "|" + str(p1.y)
+                                                                                         + "->" + str(p2.x)
+                                                                                         + "|" + str(p2.y)))
 
     def multi_swipe(self, points1: List[Point], points2: List[Point]) -> bool:
         """
@@ -180,7 +187,9 @@ class Events:
         """
         args = ""
         for point1 in points1:
-            args += str(point1.x) + "|" + str(point1.y) + "->" + str(points2[points1.index(point1)].x) + "|" + str(points2[points1.index(point1)].y)
+            args += str(point1.x) + "|" + str(point1.y) \
+                    + "->" + str(points2[points1.index(point1)].x) \
+                    + "|" + str(points2[points1.index(point1)].y)
             if points1.index(point1) != len(points1) - 1:
                 args += ","
         return self.__reply_status_check(self.device.con.get(path="sendSlideEvent", args="sliders=" + args))
@@ -269,20 +278,12 @@ class Events:
             return True
         return False
 
-    def set_orientation(self, orientation: ScreenOrientation) -> bool:
-        """
-        设置设备屏幕方向(需开启设备旋转屏幕开关)。\n
-        :param orientation: ScreenOrientation枚举值
-        :return: 开关状态，True为开启，False为关闭
-        """
-        return self.__reply_status_check(self.device.con.get(path="setCurrentOrientation", args="rotation=" + str(orientation.value)))
-
-    def get_orientation(self) -> ScreenOrientation:
+    def get_screen_orientation(self) -> ScreenOrientation:
         """
         获取设备屏幕方向。\n
         :return: ScreenOrientation枚举值
         """
-        return ScreenOrientation(int(str(self.device.con.get(path="getCurrentOrientation").read(), 'utf-8')))
+        return ScreenOrientation(int(str(self.device.con.get(path="getScreenOrientation").read(), 'utf-8')))
 
     def upload_file(self, file_path: str, remote_path: str) -> bool:
         """
@@ -347,7 +348,9 @@ class Events:
         :param target_path: 设备中目标文件路径/名称
         :return: 成功返回True，否则为False
         """
-        return bool(int(str(self.device.con.get(path="fileMove", args="source=" + source_path + "&target=" + target_path).read(), 'utf-8')))
+        return bool(int(str(
+            self.device.con.get(path="fileMove", args="source=" + source_path + "&target=" + target_path).read(),
+            'utf-8')))
 
     def dir_move(self, source_path: str, target_path: str) -> bool:
         """
@@ -365,7 +368,9 @@ class Events:
         :param target_path: 设备中目标文件路径
         :return: 成功返回True，否则为False
         """
-        return bool(int(str(self.device.con.get(path="fileCopy", args="source=" + source_path + "&target=" + target_path).read(), 'utf-8')))
+        return bool(int(str(
+            self.device.con.get(path="fileCopy", args="source=" + source_path + "&target=" + target_path).read(),
+            'utf-8')))
 
     def dir_copy(self, source_path: str, target_path: str) -> bool:
         """
@@ -374,7 +379,9 @@ class Events:
         :param target_path: 设备中目标文件夹路径
         :return: 成功返回True，否则为False
         """
-        return bool(int(str(self.device.con.get(path="dirCopy", args="source=" + source_path + "&target=" + target_path).read(), 'utf-8')))
+        return bool(
+            int(str(self.device.con.get(path="dirCopy", args="source=" + source_path + "&target=" + target_path).read(),
+                    'utf-8')))
 
     def dir_list(self, dir_path: str) -> List[FileInfo]:
         """
@@ -544,8 +551,8 @@ class Events:
         :param uiappid: 应用uiappid
         :return: 成功返回True，否则为False
         """
-        return self.__reply_status_check(self.device.con.get(
-            path="quitApp", args="sopid=" + sopid + "&uiappid=" + uiappid))
+        return self.__reply_status_check(
+            self.device.con.get(path="quitApp", args="sopid=" + sopid + "&uiappid=" + uiappid))
 
     def is_topmost(self, sopid: str) -> bool:
         """
@@ -559,52 +566,170 @@ class Events:
             return True
         return False
 
-    def get_volume(self, role: AudioRole) -> int:
+    def get_volume(self, role_type: AudioManagerRoleType) -> int:
         """
-        获取指定音频角色的音量值。\n
-        :param role: 音频角色枚举值
+        获取指定角色的当前音量值。\n
+        :param role_type: AudioManagerRoleType枚举值
         :return: 音量值
         """
-        return int(self.device.con.get(path="getVolume", args="type=" + role.value))
+        return int(self.device.con.get(path="getVolume", args="type=" + str(role_type.value)))
 
-    def set_volume(self, role: AudioRole, volume: int) -> bool:
+    def set_volume(self, role_type: AudioManagerRoleType, volume: int) -> bool:
         """
-        设置指定音频角色的音量值。\n
-        :param role: 音频角色枚举值
-        :param volume: 音量值
+        设置指定角色的音量值。\n
+        :param role_type: AudioManagerRoleType枚举值
+        :param volume: 要设置的音量值
         :return: 成功返回True，否则为False
         """
         return self.__reply_status_check(
-            self.device.con.get(path="setVolume", args="type=" + role.value + "&volume=" + volume))
-
-    def get_volume_by_step(self, role: AudioRole) -> int:
-        """
-        获取指定音频角色的音量格数。\n
-        :param role: 音频角色枚举值
-        :return: 音量格数
-        """
-        return int(self.device.con.get(path="getVolumeByStep", args="type=" + role.value))
-
-    def set_volume_by_step(self, role: AudioRole, step: int) -> bool:
-        """
-        获取指定音频角色的音量格数。\n
-        :param role: 音频角色枚举值
-        :param step: 音量格数
-        :return: 成功返回True，否则为False
-        """
-        return self.__reply_status_check(
-            self.device.con.get(path="setVolumeByStep", args="type=" + role.value + "&step=" + step))
+            self.device.con.get(path="setVolume", args="type=" + str(role_type.value) + "&volume=" + str(volume)))
 
     def get_volume_steps(self) -> int:
         """
-        获取音量总格数。\n
-        :return: 音量格数
+        获取音量设置总步数。\n
+        :return: 步数
         """
         return int(self.device.con.get(path="getVolumeSteps"))
 
-    def get_volume_active_role(self) -> AudioRole:
+    def get_volume_by_step(self, role_type: AudioManagerRoleType) -> int:
         """
-        获取当前活跃的音频角色。\n
-        :return: 音频角色枚举值
+        获取指定角色的当前音量设置步数。\n
+        :param role_type: AudioManagerRoleType枚举值
+        :return: 步数
         """
-        return AudioRole(int(self.device.con.get(path="getVolumeActiveRole")))
+        return int(self.device.con.get(path="getVolumeByStep", args="type=" + str(role_type.value)))
+
+    def set_volume_by_step(self, role_type: AudioManagerRoleType, step: int) -> bool:
+        """
+        设置指定角色的音量步数。\n
+        :param role_type: AudioManagerRoleType枚举值
+        :param step: 要设置的音量步数
+        :return: 成功返回True，否则为False
+        """
+        return self.__reply_status_check(
+            self.device.con.get(path="setVolumeByStep", args="type=" + str(role_type.value) + "&step=" + str(step)))
+
+    def get_volume_active_role(self) -> AudioManagerRoleType:
+        """
+        获取当前活跃的音量角色。\n
+        :return: AudioManagerRoleType枚举值
+        """
+        return AudioManagerRoleType(int(self.device.con.get(path="getVolumeActiveRole")))
+
+    def set_audio_output_port(self, port_type: AudioManagerPortType) -> bool:
+        """
+        设置音频输出端口。\n
+        :param port_type: AudioManagerPortType枚举值
+        :return: 成功返回True，否则为False
+        """
+        return self.__reply_status_check(
+            self.device.con.get(path="setAudioOutputPort", args="type=" + str(port_type.value)))
+
+    def get_audio_output_port(self) -> AudioManagerPortType:
+        """
+        获取音频输出端口。\n
+        :return: AudioManagerPortType枚举值
+        """
+        return AudioManagerPortType(int(self.device.con.get(path="getAudioOutputPort")))
+
+    def set_audio_input_port(self, port_type: AudioManagerPortType) -> bool:
+        """
+        设置音频输入端口。\n
+        :param port_type: AudioManagerPortType枚举值
+        :return: 成功返回True，否则为False
+        """
+        return self.__reply_status_check(
+            self.device.con.get(path="setAudioInputPort", args="type=" + str(port_type.value)))
+
+    def get_audio_input_port(self) -> AudioManagerPortType:
+        """
+        获取音频输出入端口。\n
+        :return: AudioManagerPortType枚举值
+        """
+        return AudioManagerPortType(int(self.device.con.get(path="getAudioInputPort")))
+
+    def max_brightness(self) -> int:
+        """
+        获取系统最大屏幕亮度值。\n
+        :return: 亮度值
+        """
+        return int(self.device.con.get(path="maxBrightness"))
+
+    def get_brightness(self) -> int:
+        """
+        获取系统当前屏幕亮度值。\n
+        :return: 亮度值
+        """
+        return int(self.device.con.get(path="getBrightness"))
+
+    def set_brightness(self, brightness: int) -> bool:
+        """
+        设置系统屏幕亮度值。\n
+        :param brightness: 亮度值
+        :return: 成功返回True，否则为False
+        """
+        return bool(self.device.con.get(path="setBrightness", args="brightness=" + str(brightness)))
+
+    def set_auto_brightness(self, enable: bool) -> bool:
+        """
+        设置自动系统屏幕亮度。\n
+        :param enable: 开关状态
+        :return: 成功返回True，否则为False
+        """
+        return self.__reply_status_check(
+            self.device.con.get(path="setAutoBrightness", args="enable=" + str(enable)))
+
+    def get_auto_brightness(self) -> bool:
+        """
+        获取自动系统屏幕亮度状态。\n
+        :return: 开关状态
+        """
+        return bool(self.device.con.get(path="getAutoBrightness"))
+
+    def send_orientation_event(self, orientation: Orientation) -> bool:
+        """
+        发送设备方向sensor模拟事件(此接口会自动屏蔽物理sensor的数据上报)。\n
+        :param orientation: Orientation枚举值
+        :return: 成功返回True，否则为False
+        """
+        return self.__reply_status_check(
+            self.device.con.get(path="sendOrientationEvent", args="orientation=" + str(orientation.value)))
+
+    def recover_orientation_sensor(self):
+        """
+        恢复设备方向物理sensor的数据上报功能。\n
+        :return: 成功返回True，否则为False
+        """
+        return self.__reply_status_check(self.device.con.get(path="recoverOrientationSensor"))
+
+    def send_ambient_light_event(self, lux: int) -> bool:
+        """
+        发送环境光sensor模拟事件(此接口会自动屏蔽物理sensor的数据上报)。\n
+        :param lux: 亮度值
+        :return: 成功返回True，否则为False
+        """
+        return self.__reply_status_check(
+            self.device.con.get(path="sendAmbientLightEvent", args="lux=" + str(lux)))
+
+    def recover_ambient_light_sensor(self):
+        """
+        恢复环境光物理sensor的数据上报功能。\n
+        :return: 成功返回True，否则为False
+        """
+        return self.__reply_status_check(self.device.con.get(path="recoverAmbientLightSensor"))
+
+    def send_proximity_event(self, within_proximity: bool) -> bool:
+        """
+        发送接近sensor模拟事件(此接口会自动屏蔽物理sensor的数据上报)。\n
+        :param within_proximity: 时候接近
+        :return: 成功返回True，否则为False
+        """
+        return self.__reply_status_check(
+            self.device.con.get(path="sendProximityEvent", args="withinProximity=" + str(int(within_proximity))))
+
+    def recover_proximity_sensor(self):
+        """
+        恢复接近物理sensor的数据上报功能。\n
+        :return: 成功返回True，否则为False
+        """
+        return self.__reply_status_check(self.device.con.get(path="recoverProximitySensor"))

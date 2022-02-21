@@ -128,10 +128,13 @@ class WatcherActive(enum.Enum):
     Watcher执行动作类型。\n
     :ivar CLICK: 点击屏幕
     :ivar LAUNCH: 启动应用
+    :ivar PAUSE: 按键
+    :ivar STOP: 停止应用
     """
     CLICK = 0
     LAUNCH = 1
     PAUSE = 2
+    STOP = 3
 
 
 class Keys(enum.Enum):
@@ -144,23 +147,79 @@ class Keys(enum.Enum):
     HOME = 1
 
 
-class AudioRole(enum.Enum):
+class AudioManagerRoleType(enum.Enum):
     """
-    音频角色。\n
-    :ivar INVALID: 无效值
-    :ivar RINGTONE: 电话铃声
-    :ivar NOTIFICATION: 通知铃声
-    :ivar MEDIA: 媒体播放
-    :ivar SYSTEM: 系统音效
-    :ivar PHONE: 通话声音
-    :ivar ALARM: 闹铃
-    :ivar KEYTONE: 按键音
+    音频管理角色类型。\n
+    :ivar AM_ROLE_INVALID: 无效的
+    :ivar AM_ROLE_RINGTONE: 来电铃声
+    :ivar AM_ROLE_NOTIFICATION: 通知提示音
+    :ivar AM_ROLE_MEDIA: 多媒体
+    :ivar AM_ROLE_SYSTEM: 系统提示音
+    :ivar AM_ROLE_PHONE: 通话
+    :ivar AM_ROLE_ALARM: 闹钟铃声
+    :ivar AM_ROLE_KEYTONE: 按键提示音
+    :ivar AM_ROLE_MAX: ...
     """
-    INVALID = 0
-    RINGTONE = 1
-    NOTIFICATION = 2
-    MEDIA = 3
-    SYSTEM = 4
-    PHONE = 5
-    ALARM = 6
-    KEYTONE = 7
+    AM_ROLE_INVALID = 0
+    AM_ROLE_RINGTONE = 1
+    AM_ROLE_NOTIFICATION = 2
+    AM_ROLE_MEDIA = 3
+    AM_ROLE_SYSTEM = 4
+    AM_ROLE_PHONE = 5
+    AM_ROLE_ALARM = 6
+    AM_ROLE_KEYTONE = 7
+    AM_ROLE_MAX = 8
+
+
+class AudioManagerPortType(enum.Enum):
+    """
+    音频端口类型。\n
+    :ivar AM_PORT_OUTPUT_IHF: 免提输出
+    :ivar AM_PORT_OUTPUT_HEADPHONE: 耳机输出
+    :ivar AM_PORT_OUTPUT_HEADSET: 耳麦输出
+    :ivar AM_PORT_CALLON_EARPIECE: 通话听筒输出
+    :ivar AM_PORT_CALLON_HEADPHONE: 通话耳机输出
+    :ivar AM_PORT_CALLON_HEADSET: 通话耳麦输出
+    :ivar AM_PORT_CALLON_SPEAKER: 通话扬声器输出
+    :ivar AM_PORT_OUTPUT_IHFHEADPHONE: 耳机免提输出
+    :ivar AM_PORT_CALLON_BLUETOOTH: 通话蓝牙输出
+    :ivar AM_PORT_INPUT_MIC: 主麦克风输入
+    :ivar AM_PORT_INPUT_SECOND_MIC: 次麦克风输入
+    :ivar AM_PORT_INPUT_HEADSET_MIC: 耳麦输入
+    :ivar AM_PORT_OUTPUT_AUX_DIGITAL: 辅助数字输出
+    :ivar AM_PORT_INVALID: 无效的
+    """
+    AM_PORT_OUTPUT_IHF = 0
+    AM_PORT_OUTPUT_HEADPHONE = 1
+    AM_PORT_OUTPUT_HEADSET = 2
+    AM_PORT_CALLON_EARPIECE = 3
+    AM_PORT_CALLON_HEADPHONE = 4
+    AM_PORT_CALLON_HEADSET = 5
+    AM_PORT_CALLON_SPEAKER = 6
+    AM_PORT_OUTPUT_IHFHEADPHONE = 7
+    AM_PORT_CALLON_BLUETOOTH = 8
+    AM_PORT_INPUT_MIC = 9
+    AM_PORT_INPUT_SECOND_MIC = 10
+    AM_PORT_INPUT_HEADSET_MIC = 11
+    AM_PORT_OUTPUT_AUX_DIGITAL = 12
+    AM_PORT_INVALID = 13
+
+
+class Orientation(enum.Enum):
+    """
+    设备方向。\n
+    :ivar UNDEFINED: 未定义
+    :ivar TOP_UP: 上边框朝上
+    :ivar TOP_DOWN: 上边框朝下
+    :ivar LEFT_UP: 左边框朝上
+    :ivar RIGHT_UP: 有边框朝上
+    :ivar FACE_UP: 正面朝上
+    :ivar FACE_DOWN: 正面朝下
+    """
+    UNDEFINED = 0
+    TOP_UP = 1
+    TOP_DOWN = 2
+    LEFT_UP = 3
+    RIGHT_UP = 4
+    FACE_UP = 5
+    FACE_DOWN = 6

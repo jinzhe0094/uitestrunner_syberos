@@ -54,4 +54,3 @@ class Connection:
     def sse(self, path):
         messages = SSEClient(url="http://" + self.host + ":" + str(self.port) + "/" + path)
         return messages
-

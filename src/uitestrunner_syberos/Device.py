@@ -13,15 +13,12 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import multiprocessing
 
 import base64
-import json
 import os
 import platform
 import re
 import threading
-import time
 import ctypes
 from ctypes import *
 from subprocess import *
@@ -53,8 +50,9 @@ def _web_driver_daemon(main_pid, wb_pid, parent_pid):
     main_process = psutil.Process(main_pid)
     wb_process = psutil.Process(wb_pid)
     while main_process.is_running():
-        time.sleep(3)
-    wb_process.kill()
+        time.sleep(0.5)
+    if wb_process.is_running():
+        wb_process.kill()
     exit(0)
 
 
@@ -82,7 +80,7 @@ class Device(Events):
     """
     con = Connection()
     __osVersion = ""
-    __serial_number = ""
+    __serialNumber = ""
     xml_string = ""
     __xpath_file = "./xpath_list.ini"
     __screenshots = "./screenshots/"
@@ -107,16 +105,17 @@ class Device(Events):
         self.con.port = port
         self.con.connect()
         self.__path = os.path.realpath(__file__).split(os.path.basename(__file__))[0]
-        self.__serial_number = str(self.con.get(path="getSerialNumber").read(), 'utf-8')
+        self.__serialNumber = str(self.con.get(path="getSerialNumber").read(), 'utf-8')
         self.__osVersion = str(self.con.get(path="getOsVersion").read(), 'utf-8')
         self.__set_display_size()
         if _main:
             self.__check_platform()
             if self.control_host_type != Controller.ANYWHERE:
-                _start_web_driver_daemon(self.__wb_process.pid)
+                if self.control_host_type != Controller.WINDOWS_AMD64:
+                    _start_web_driver_daemon(self.__wb_process.pid)
                 _start_watcher(host, port, self.__watcher_conn)
             syslog_thread = threading.Thread(target=self.__logger)
-            syslog_thread.setDaemon(True)
+            syslog_thread.daemon = True
             syslog_thread.start()
         self.refresh_layout()
         if self.control_host_type != 0:
@@ -136,7 +135,9 @@ class Device(Events):
             self.__init_webdriver("darwin_x86_64_phantomjs", "libsimulation-rendering.dylib")
 
     def __init_webdriver(self, p_name, l_name):
-        self.__wb_process = Popen([self.__path + "data/" + p_name, self.__path + "data/ghostdriver/main.js", str(self.__width), str(self.__height)], stdout=PIPE, stderr=PIPE)
+        self.__wb_process = Popen([self.__path + "data/" + p_name,
+                                   self.__path + "data/ghostdriver/main.js",
+                                   str(self.__width), str(self.__height)], stdout=PIPE, stderr=PIPE)
         for i in range(2):
             self.__wb_process.stdout.readline()
         ll = cdll.LoadLibrary
@@ -148,12 +149,45 @@ class Device(Events):
 
     def watcher(self, name: str) -> Watcher:
         """
-        创建一个监视者，可以根据指定条件作出相应反应。\n
+        创建一个待启动的监视者，可以根据指定条件作出相应反应。\n
         :param name: 标识名称，不可重复
         :return: 返回一个实例化的Watcher对象
         """
         w = Watcher({'name': name}, self)
         return w
+
+    def start_watcher(self, name: str) -> None:
+        """
+        启动一个已有的监视者。\n
+        :param name: 监视者标识名称
+        :return: 无
+        """
+        for watcher in self.watcher_list:
+            if name == watcher['name']:
+                watcher['is_run'] = True
+        self.__main_conn.send({'watcher_list': self.watcher_list})
+
+    def pause_watcher(self, name: str) -> None:
+        """
+        暂停一个已有的监视者。\n
+        :param name: 监视者标识名称
+        :return: 无
+        """
+        for watcher in self.watcher_list:
+            if name == watcher['name']:
+                watcher['is_run'] = False
+        self.__main_conn.send({'watcher_list': self.watcher_list})
+
+    def delete_watcher(self, name: str) -> None:
+        """
+        删除一个已有的监视者。\n
+        :param name: 监视者标识名称
+        :return: 无
+        """
+        for watcher in self.watcher_list:
+            if name == watcher['name']:
+                self.watcher_list.remove(watcher)
+        self.__main_conn.send({'watcher_list': self.watcher_list})
 
     def __logger_pingpong(self):
         self.con.get(path="SSEPingpong", args="tid=" + str(self.__syslog_tid))
@@ -205,7 +239,8 @@ class Device(Events):
         """
         return self.__syslog_output_keyword
 
-    def set_syslog_save_start(self, save_path: str = "./syslog/", save_name: str = None, save_keyword: str = "") -> None:
+    def set_syslog_save_start(self, save_path: str = "./syslog/", save_name: str = None,
+                              save_keyword: str = "") -> None:
         """
         设置保存设备log开始。\n
         :param save_path: 保存文件路径，指定一个文件夹的相对或绝对路径，默认在当前工作目录下的syslog文件夹
@@ -295,11 +330,12 @@ class Device(Events):
         image.close()
         return file_name
 
-    def grab_image_to_base64(self, cx: int, cy: int, width: int, height: int, rotation: int = 0, scale: float = 1) -> str:
+    def grab_image_to_base64(self, cx: int, cy: int, width: int, height: int, rotation: int = 0,
+                             scale: float = 1) -> str:
         """
         获取指定位置、大小及状态的范围截图。\n
-        :param cx: 范围旋转缩放前的中心点横坐标
-        :param cy: 范围旋转缩放前的中心点纵坐标
+        :param cx: 范围旋转缩放前的横坐标
+        :param cy: 范围旋转缩放前的纵坐标
         :param width: 范围旋转缩放前的宽度
         :param height: 范围旋转缩放前的高度
         :param rotation: 顺时针旋转角度
@@ -307,11 +343,11 @@ class Device(Events):
         :return: 截图的base64形态
         """
         return str(self.con.get(path="grabImage", args="x=" + str(round(cx))
-                              + "&y=" + str(round(cy))
-                              + "&w=" + str(round(width))
-                              + "&h=" + str(round(height))
-                              + "&r=" + str(round(rotation))
-                              + "&s=" + str(round(scale))).read(), 'utf-8')
+                                                       + "&y=" + str(round(cy))
+                                                       + "&w=" + str(round(width))
+                                                       + "&h=" + str(round(height))
+                                                       + "&r=" + str(round(rotation))
+                                                       + "&s=" + str(round(scale))).read(), 'utf-8')
 
     def __set_display_size(self):
         image_data = str(self.con.get(path="getScreenShot").read(), 'utf-8')
@@ -365,8 +401,8 @@ class Device(Events):
         获取当前设备硬件序列号。\n
         :return: 序列号字符串
         """
-        return self.__serial_number
-    
+        return self.__serialNumber
+
     def find_item_by_xpath_key(self, sopid: str, xpath_key: str) -> Item:
         """
         获取元素控件实例化对象。\n

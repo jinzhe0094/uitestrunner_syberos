@@ -25,15 +25,16 @@ from lxml import etree
 import cv2
 import xml.dom.minidom
 import numpy as np
-import random
+# import random
 from time import sleep
-import io
 from .DataStruct import *
 import operator
 from functools import reduce
 
 
-html_string_1 = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><title>render</title></head><body style=\"background:#000;clip:rect(auto,auto,auto,auto);\"><div id=\"content\" style=\"width:"
+html_string_1 = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><title>render" \
+                "</title></head><body style=\"background:#000;clip:rect(auto,auto,auto,auto);" \
+                "\"><div id=\"content\" style=\"width:"
 html_string_2 = "px;height:"
 html_string_3 = "px;clip:rect(auto,auto,auto,auto);\">"
 html_string_4 = "</div></body></html>"
@@ -44,7 +45,7 @@ class _WorkerThread(threading.Thread):
     result = None
 
     def __init__(self, func, args=()):
-        super(WorkerThread, self).__init__()
+        super().__init__(args=args)
         self.func = func
         self.args = args
 
@@ -366,9 +367,14 @@ class Item:
 
     def __exist(self):
         self.__refresh_node()
-        if self.node is not None and self.__visible and self.__opacity > 0 and self.__scale != 0 and self.__width > 0 and self.__height > 0:
+        if self.node is not None \
+                and self.__visible \
+                and self.__opacity > 0 \
+                and self.__scale != 0 \
+                and self.__width > 0 \
+                and self.__height > 0:
             image = []
-            if self.device.control_host_type == Controller.ANYWHERE:
+            if self.device.control_host_type == 0:
                 tree = xml.dom.minidom.parseString(self.device.xml_string)
                 for node in tree.documentElement.childNodes:
                     for n in node.childNodes:
@@ -386,8 +392,11 @@ class Item:
                                           html_string_2 + str(self.__display_height) +
                                           html_string_3 + string_at(html_string, -1).decode('utf-8') +
                                           html_string_4)
-                image = cv2.imdecode(np.frombuffer(base64.b64decode(self.device.webdriver.get_screenshot_as_base64()), np.uint8), cv2.COLOR_RGB2BGR)
-            # cv2.imshow(str(self.device.system_time()), image)
+                image = cv2.imdecode(np.frombuffer(base64.b64decode(self.device.webdriver.get_screenshot_as_base64()),
+                                                   np.uint8), cv2.COLOR_RGB2BGR)
+            # win_name = str(self.device.system_time())
+            # cv2.namedWindow(win_name, cv2.WINDOW_NORMAL)
+            # cv2.imshow(win_name, image)
             # cv2.waitKey(0)
             b, g, r = cv2.split(image)
             if len(np.argwhere(r == 255)) > 0:
@@ -401,7 +410,7 @@ class Item:
         for node in nodes:
             th = _WorkerThread(func=self.__draw_item, args=(node, fs, ))
             th_list[th_index] = th
-            th.setDaemon(True)
+            th.daemon = True
             th_index += 1
         for i in range(th_index):
             th_list[i].start()
@@ -760,8 +769,14 @@ class Item:
         :param timeout: 超时时间(单位:秒)，默认为框架超时时间
         :return: 成功返回True，否则为False
         """
-        if self.exist(timeout):3
-            self.device.click(Point(self.rect[0][1]+1, self.rect[0][0]+1), delay)
+        if self.exist(timeout):
+            if (self.rect[len(self.rect) - 1][1] - self.rect[0][1] + 1) \
+                    * (self.rect[len(self.rect) - 1][0] - self.rect[0][0] + 1) == len(self.rect):
+                x = self.rect[0][1] + int((self.rect[len(self.rect) - 1][1] - self.rect[0][1] + 1) / 2)
+                y = self.rect[0][0] + int((self.rect[len(self.rect) - 1][0] - self.rect[0][0] + 1) / 2)
+                self.device.click(Point(x, y))
+                return True
+            self.device.click(Point(self.rect[100][1], self.rect[100][0]), delay)
             return True
         return False
 
@@ -779,7 +794,10 @@ class Item:
         获取元素控件的显示范围截图。\n
         :return: 截图的base64形态
         """
-        return self.device.grab_image_to_base64(self.__center_x_to_global, self.__center_y_to_global, self.__width, self.__height, self.__rotation, self.__scale)
+        return self.device.grab_image_to_base64(self.__center_x_to_global,
+                                                self.__center_y_to_global,
+                                                self.__width, self.__height,
+                                                self.__rotation, self.__scale)
 
     def contrast_picture(self, path: str) -> float:
         """
