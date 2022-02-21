@@ -1,0 +1,11 @@
+sseclient
+paramiko
+scp
+lxml
+urllib3
+opencv-python==4.5.3.56
+numpy
+psutil
+sympy
+scikit-build
+Pillow
