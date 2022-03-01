@@ -6,6 +6,7 @@ src/uitestrunner_syberos/DataStruct.py
 src/uitestrunner_syberos/Device.py
 src/uitestrunner_syberos/Events.py
 src/uitestrunner_syberos/Item.py
+src/uitestrunner_syberos/TextItemFromOcr.py
 src/uitestrunner_syberos/Watcher.py
 src/uitestrunner_syberos/__init__.py
 src/uitestrunner_syberos/__main__.py

@@ -13,8 +13,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 import base64
+import io
 import os
 import platform
 import re
@@ -32,6 +32,14 @@ from .Watcher import *
 import psutil
 import warnings
 from .DataStruct import *
+from .TextItemFromOcr import TextItemFromOcr
+import easyocr
+from PIL import Image
+from typing import List
+import ocrCraftModel4uts
+import ocrLangModel4uts
+import shutil
+from pathlib import Path
 
 
 def _watcher_process(main_pid, host, port, conn):
@@ -83,6 +91,7 @@ class Device(Events):
     __serial_number = ""
     xml_string = ""
     __xpath_file = "./xpath_list.ini"
+    __environment_file = "./environment.ini"
     __screenshots = "./screenshots/"
     default_timeout = 30
     __syslog_output = False
@@ -97,8 +106,9 @@ class Device(Events):
     __height = 0
     __syslog_tid = None
     control_host_type = Controller.ANYWHERE
+    __ocr_mods = "./ocr_models/"
 
-    def __init__(self, host="192.168.100.100", port=10008, _main=True):
+    def __init__(self, host: str = "192.168.100.100", port: int = 10008, _main: bool = True):
         super().__init__(d=self)
         warnings.simplefilter('ignore', ResourceWarning)
         self.con.host = host
@@ -117,8 +127,22 @@ class Device(Events):
             syslog_thread = threading.Thread(target=self.__logger)
             syslog_thread.daemon = True
             syslog_thread.start()
+            if not Path(self.__ocr_mods).exists():
+                os.mkdir(self.__ocr_mods)
+            else:
+                if not Path(self.__ocr_mods).is_dir():
+                    os.remove("./ocr_models")
+                    os.mkdir(self.__ocr_mods)
+            for mod in os.listdir(ocrCraftModel4uts.get_path()):
+                if not Path(ocrCraftModel4uts.get_path() + mod).is_dir():
+                    if not Path(self.__ocr_mods + mod).exists():
+                        shutil.copy(ocrCraftModel4uts.get_path() + mod, self.__ocr_mods)
+            for mod in os.listdir(ocrLangModel4uts.get_path()):
+                if not Path(ocrLangModel4uts.get_path() + mod).is_dir():
+                    if not Path(self.__ocr_mods + mod).exists():
+                        shutil.copy(ocrLangModel4uts.get_path() + mod, self.__ocr_mods)
         self.refresh_layout()
-        if self.control_host_type != 0:
+        if self.control_host_type != Controller.ANYWHERE:
             self.webdriver = webdriver.WebDriver(command_executor='http://127.0.0.1:8910/wd/hub')
 
     def __check_platform(self):
@@ -382,6 +406,20 @@ class Device(Events):
         conf.read(self.__xpath_file)
         return conf.get(sop_id, key)
 
+    def get_environment(self, key: str, module: str = "General") -> str:
+        """
+        获取支撑脚本执行的环境变量，保存在脚本目录下的environment.ini文件中。\n
+        :param key: 键
+        :param module: 模块名称，默认值：General
+        :return: 环境变量值
+        """
+        if not os.path.exists(self.__environment_file):
+            f = open(self.__environment_file, "w")
+            f.close()
+        conf = configparser.ConfigParser()
+        conf.read(self.__environment_file)
+        return conf.get(module, key)
+
     def refresh_layout(self) -> None:
         """
         刷新当前设备的UI布局信息。\n
@@ -422,3 +460,30 @@ class Device(Events):
         """
         i = Item(d=self, s=sopid, xpath=xpath)
         return i
+
+    def get_text_item_list(self, item: Item) -> List[TextItemFromOcr]:
+        """
+        根据元素控件的截图进行OCR图像识别获取文本元素实例化对象列表。\n
+        :param item: 传入的元素控件
+        :return: TextItemFromOcr对象列表
+        """
+        image_base64 = item.grab_image_to_base64()
+        image = open("./orc_temp_image.png", "wb")
+        imdata = base64.b64decode(image_base64)
+        image.write(imdata)
+        image.close()
+        reader = easyocr.Reader(['ch_sim', 'en'], gpu=False, model_storage_directory=self.__ocr_mods)
+        im = Image.open(io.BytesIO(imdata))
+        width, height = im.size
+        px = item.center_x_to_global() - (width / 2)
+        py = item.center_y_to_global() - (height / 2)
+        text_item_info_list = reader.readtext('./orc_temp_image.png')
+        text_item_list = []
+        for text_item_info in text_item_info_list:
+            x = text_item_info[0][0][0]
+            y = text_item_info[0][0][1]
+            w = text_item_info[0][2][0] - x
+            h = text_item_info[0][2][1] - y
+            text = text_item_info[1]
+            text_item_list.append(TextItemFromOcr(x + px, y + py, w, h, text, self))
+        return text_item_list

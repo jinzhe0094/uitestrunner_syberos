@@ -1,4 +1,4 @@
-# Copyright (C) <2021>  YUANXIN INFORMATION TECHNOLOGY GROUP CO.LTD and Jinzhe Wang
+# Copyright (C) <2021-2022>  YUANXIN INFORMATION TECHNOLOGY GROUP CO.LTD and Jinzhe Wang
 # This file is part of uitestrunner_syberos
 #
 # This program is free software: you can redistribute it and/or modify
@@ -18,6 +18,7 @@ import psutil
 from typing import TypeVar
 from .DataStruct import WatcherActive
 from .DataStruct import Keys
+
 
 WatchContext_T = TypeVar('WatchContext_T', bound='WatchContext')
 
@@ -46,7 +47,7 @@ class WatchWorker:
                 self.__get_list()
                 self.device.refresh_layout()
                 for watcher in self.__watcher_list:
-                    if not self.__watcher_list['is_run']:
+                    if not watcher['is_run']:
                         continue
                     flag = 0
                     for xpath in watcher['xpath_list']:

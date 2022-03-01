@@ -3,9 +3,14 @@ paramiko
 scp
 lxml
 urllib3
-opencv-python==4.5.3.56
+opencv-python
 numpy
 psutil
 sympy
 scikit-build
 Pillow
+easyocr
+torch
+torchvision
+ocrLangModel4uts
+ocrCraftModel4uts

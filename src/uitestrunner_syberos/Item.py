@@ -30,6 +30,7 @@ from time import sleep
 from .DataStruct import *
 import operator
 from functools import reduce
+from . import Device
 
 
 html_string_1 = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><title>render" \
@@ -66,13 +67,13 @@ class Item:
     """
     node = None
     xpath = ""
-    device = None
+    device: Device = None
     sopid = ""
     __display_width = 0
     __display_height = 0
     rect = []
 
-    def __init__(self, d=None, s="", xpath=""):
+    def __init__(self, d: Device, s: str = "", xpath: str = ""):
         self.sopid = s
         self.device = d
         self.__display_width = self.device.display_width()
@@ -139,7 +140,7 @@ class Item:
 
     def x(self, refresh: bool = False) -> int:
         """
-        获取元素控件的横坐标整数值。\n
+        获取元素控件的左上角横坐标整数值。\n
         :param refresh: 是否刷新布局信息(默认值False)
         :return: 横坐标整数值
         """
@@ -149,7 +150,7 @@ class Item:
 
     def y(self, refresh: bool = False) -> int:
         """
-        获取元素控件的纵坐标整数值。\n
+        获取元素控件的左上角纵坐标整数值。\n
         :param refresh: 是否刷新布局信息(默认值False)
         :return: 纵坐标整数值
         """
@@ -159,7 +160,7 @@ class Item:
 
     def center_x_to_item(self, refresh: bool = False) -> int:
         """
-        获取元素控件的相对于父对象的映射横坐标整数值。\n
+        获取元素控件的中心点相对于父对象的映射横坐标整数值。\n
         :param refresh: 是否刷新布局信息(默认值False)
         :return: 横坐标整数值
         """
@@ -169,7 +170,7 @@ class Item:
 
     def center_y_to_item(self, refresh: bool = False) -> int:
         """
-        获取元素控件的相对于父对象的映射纵坐标整数值。\n
+        获取元素控件的中心点相对于父对象的映射纵坐标整数值。\n
         :param refresh: 是否刷新布局信息(默认值False)
         :return: 纵坐标整数值
         """
@@ -179,7 +180,7 @@ class Item:
 
     def center_x_to_global(self, refresh: bool = False) -> int:
         """
-        获取元素控件的相对于全局的映射横坐标整数值。\n
+        获取元素控件的中心点相对于全局的映射横坐标整数值。\n
         :param refresh: 是否刷新布局信息(默认值False)
         :return: 横坐标整数值
         """
@@ -189,7 +190,7 @@ class Item:
 
     def center_y_to_global(self, refresh: bool = False) -> int:
         """
-        获取元素控件的相对于全局的映射纵坐标整数值。\n
+        获取元素控件的中心点相对于全局的映射纵坐标整数值。\n
         :param refresh: 是否刷新布局信息(默认值False)
         :return: 纵坐标整数值
         """

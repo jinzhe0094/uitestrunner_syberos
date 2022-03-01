@@ -28,13 +28,9 @@ class Events:
     模拟事件类。
     """
     device = None
-    app = None
-    item = None
 
-    def __init__(self, d=None, a=None, i=None):
+    def __init__(self, d):
         self.device = d
-        self.app = a
-        self.item = i
 
     @staticmethod
     def __reply_status_check(reply):
@@ -214,7 +210,7 @@ class Events:
         """
         点击设备主屏幕按键。\n
         :param delay: 点击延时时间(单位:毫秒)，默认无延时
-        :param timeout: 超时时间 (单位:秒)，默认为框架超时时间
+        :param timeout: 超时时间(单位:秒)，默认为框架超时时间
         :return: 成功返回True，否则为False
         """
         if delay > 0:
@@ -733,3 +729,23 @@ class Events:
         :return: 成功返回True，否则为False
         """
         return self.__reply_status_check(self.device.con.get(path="recoverProximitySensor"))
+
+    def is_network_available(self):
+        """
+        获取当前网络状态是否可用。\n
+        :return: 网络可用状态
+        """
+        return bool(int(str(self.device.con.get(path="isNetworkAvailable").read(), 'utf-8')))
+
+    def connect_open_wifi(self, ssid: str, timeout: int = None):
+        """
+        连接设备至开放WiFi网络。\n
+        :param ssid: WiFi网络名称
+        :param timeout: 超时时间(单位:秒)，默认为框架超时时间
+        :return:
+        """
+        if timeout is None:
+            timeout = self.device.default_timeout
+        return bool(int(str(self.device.con.get(path="connectOpenWiFi", args="ssid=" + ssid
+                                                                             + "&timeout="
+                                                                             + str(timeout)).read(), 'utf-8')))

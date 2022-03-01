@@ -21,3 +21,4 @@ from .Item import Item
 from .Watcher import *
 from .DataStruct import *
 from .selenium_phantomjs import *
+from .TextItemFromOcr import TextItemFromOcr

@@ -1,13 +1,14 @@
 from setuptools import setup, find_packages
 setup(
     name='uitestrunner_syberos',
-    version='1.0.0',
+    version='1.0.3',
     author='Jinzhe Wang',
     description='A ui automated testing tool for SyberOS',
     author_email='wangjinzhe@syberos.com',
     url='http://www.syberos.cn/',
     project_urls={
-        "API": "https://jinzhe0094.github.io/uitestrunner-syberos-api-doc/"
+        "Source": "https://github.com/jinzhe0094/uitestrunner_syberos",
+        "Api Doc": "https://jinzhe0094.github.io/uitestrunner-syberos-api-doc/"
     },
     packages=find_packages("src"),
     package_dir={"": "src"},
@@ -19,7 +20,8 @@ setup(
                 "uitestrunner_syberos.setup",
                 "uitestrunner_syberos.__main__",
                 "uitestrunner_syberos.selenium_phantomjs",
-                "uitestrunner_syberos.DataStruct"],
+                "uitestrunner_syberos.DataStruct",
+                "uitestrunner_syberos.TextItemFromOcr"],
     package_data={
         "uitestrunner_syberos": ["data/*",
                                  "data/ghostdriver/*",
@@ -32,16 +34,21 @@ setup(
                       "scp",
                       "lxml",
                       "urllib3",
-                      "opencv-python==4.5.3.56",
+                      "opencv-python",
                       "numpy",
                       "psutil",
                       "sympy",
                       "scikit-build",
-                      "Pillow"],
+                      "Pillow",
+                      "easyocr",
+                      "torch",
+                      "torchvision",
+                      "ocrLangModel4uts",
+                      "ocrCraftModel4uts"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.6, <4"
+    python_requires=">=3.8, <4"
 )
