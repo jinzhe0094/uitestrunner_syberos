@@ -88,7 +88,7 @@ class Events:
         :return: 成功返回True，否则为False
         """
         return self.__reply_status_check(self.device.con.get(path="setDisplayState", args="state=0")) and \
-            self.__reply_status_check(self.device.con.get(path="setDisplayState", args="state=2"))
+               self.__reply_status_check(self.device.con.get(path="setDisplayState", args="state=2"))
 
     def get_display_state(self) -> DisplayState:
         """
@@ -568,7 +568,7 @@ class Events:
         :param role_type: AudioManagerRoleType枚举值
         :return: 音量值
         """
-        return int(self.device.con.get(path="getVolume", args="type=" + str(role_type.value)))
+        return int(self.device.con.get(path="getVolume", args="type=" + str(role_type.value)).read())
 
     def set_volume(self, role_type: AudioManagerRoleType, volume: int) -> bool:
         """
@@ -585,7 +585,7 @@ class Events:
         获取音量设置总步数。\n
         :return: 步数
         """
-        return int(self.device.con.get(path="getVolumeSteps"))
+        return int(self.device.con.get(path="getVolumeSteps").read())
 
     def get_volume_by_step(self, role_type: AudioManagerRoleType) -> int:
         """
@@ -593,7 +593,7 @@ class Events:
         :param role_type: AudioManagerRoleType枚举值
         :return: 步数
         """
-        return int(self.device.con.get(path="getVolumeByStep", args="type=" + str(role_type.value)))
+        return int(self.device.con.get(path="getVolumeByStep", args="type=" + str(role_type.value)).read())
 
     def set_volume_by_step(self, role_type: AudioManagerRoleType, step: int) -> bool:
         """
@@ -610,7 +610,7 @@ class Events:
         获取当前活跃的音量角色。\n
         :return: AudioManagerRoleType枚举值
         """
-        return AudioManagerRoleType(int(self.device.con.get(path="getVolumeActiveRole")))
+        return AudioManagerRoleType(int(self.device.con.get(path="getVolumeActiveRole").read()))
 
     def set_audio_output_port(self, port_type: AudioManagerPortType) -> bool:
         """
@@ -626,7 +626,7 @@ class Events:
         获取音频输出端口。\n
         :return: AudioManagerPortType枚举值
         """
-        return AudioManagerPortType(int(self.device.con.get(path="getAudioOutputPort")))
+        return AudioManagerPortType(int(self.device.con.get(path="getAudioOutputPort").read()))
 
     def set_audio_input_port(self, port_type: AudioManagerPortType) -> bool:
         """
@@ -642,21 +642,21 @@ class Events:
         获取音频输出入端口。\n
         :return: AudioManagerPortType枚举值
         """
-        return AudioManagerPortType(int(self.device.con.get(path="getAudioInputPort")))
+        return AudioManagerPortType(int(self.device.con.get(path="getAudioInputPort").read()))
 
     def max_brightness(self) -> int:
         """
         获取系统最大屏幕亮度值。\n
         :return: 亮度值
         """
-        return int(self.device.con.get(path="maxBrightness"))
+        return int(self.device.con.get(path="maxBrightness").read())
 
     def get_brightness(self) -> int:
         """
         获取系统当前屏幕亮度值。\n
         :return: 亮度值
         """
-        return int(self.device.con.get(path="getBrightness"))
+        return int(self.device.con.get(path="getBrightness").read())
 
     def set_brightness(self, brightness: int) -> bool:
         """
@@ -664,7 +664,7 @@ class Events:
         :param brightness: 亮度值
         :return: 成功返回True，否则为False
         """
-        return bool(self.device.con.get(path="setBrightness", args="brightness=" + str(brightness)))
+        return bool(int(self.device.con.get(path="setBrightness", args="brightness=" + str(brightness)).read()))
 
     def set_auto_brightness(self, enable: bool) -> bool:
         """
@@ -680,7 +680,7 @@ class Events:
         获取自动系统屏幕亮度状态。\n
         :return: 开关状态
         """
-        return bool(self.device.con.get(path="getAutoBrightness"))
+        return bool(int(self.device.con.get(path="getAutoBrightness").read()))
 
     def send_orientation_event(self, orientation: Orientation) -> bool:
         """
@@ -691,7 +691,7 @@ class Events:
         return self.__reply_status_check(
             self.device.con.get(path="sendOrientationEvent", args="orientation=" + str(orientation.value)))
 
-    def recover_orientation_sensor(self):
+    def recover_orientation_sensor(self) -> bool:
         """
         恢复设备方向物理sensor的数据上报功能。\n
         :return: 成功返回True，否则为False
@@ -707,7 +707,7 @@ class Events:
         return self.__reply_status_check(
             self.device.con.get(path="sendAmbientLightEvent", args="lux=" + str(lux)))
 
-    def recover_ambient_light_sensor(self):
+    def recover_ambient_light_sensor(self) -> bool:
         """
         恢复环境光物理sensor的数据上报功能。\n
         :return: 成功返回True，否则为False
@@ -723,29 +723,51 @@ class Events:
         return self.__reply_status_check(
             self.device.con.get(path="sendProximityEvent", args="withinProximity=" + str(int(within_proximity))))
 
-    def recover_proximity_sensor(self):
+    def recover_proximity_sensor(self) -> bool:
         """
         恢复接近物理sensor的数据上报功能。\n
         :return: 成功返回True，否则为False
         """
         return self.__reply_status_check(self.device.con.get(path="recoverProximitySensor"))
 
-    def is_network_available(self):
+    def is_network_available(self) -> bool:
         """
         获取当前网络状态是否可用。\n
         :return: 网络可用状态
         """
         return bool(int(str(self.device.con.get(path="isNetworkAvailable").read(), 'utf-8')))
 
-    def connect_open_wifi(self, ssid: str, timeout: int = None):
+    def connect_open_wifi(self, ssid: str, timeout: int = None) -> bool:
         """
         连接设备至开放WiFi网络。\n
         :param ssid: WiFi网络名称
         :param timeout: 超时时间(单位:秒)，默认为框架超时时间
-        :return:
+        :return: 成功返回True，否则为False
         """
         if timeout is None:
             timeout = self.device.default_timeout
-        return bool(int(str(self.device.con.get(path="connectOpenWiFi", args="ssid=" + ssid
-                                                                             + "&timeout="
-                                                                             + str(timeout)).read(), 'utf-8')))
+        return bool(int(self.device.con.get(path="connectOpenWiFi", args="ssid=" + ssid
+                                                                         + "&timeout="
+                                                                         + str(timeout)).read()))
+
+    def password_exists(self) -> bool:
+        """
+        查询设备是否存在锁屏密码。\n
+        :return: 存在返回True，否则为False
+        """
+        return bool(int(self.device.con.get(path="passwordExists").read()))
+
+    def set_password(self, password_type: PasswordType, password: str) -> AuthenError:
+        """
+        设置设备锁屏密码。\n
+        :param password_type: 密码类型，PasswordType枚举值
+        :param password: 密码字符串。\n
+        简单密码为4位纯数字；\n
+        复杂密码为8-16位字符串，至少包含字母、数字、符号中的两种，不能包含3个及以上连续或相同的字母或数字；\n
+        图形密码为6位字母字符串，范围小写a-p，分别对应到4x4矩阵的个个点位。
+        :return: AuthenError枚举值
+        """
+        reply = int(self.device.con.get(path="setPassword", args="type=" + str(password_type.value) +
+                                                                 "&password=" + password).read())
+        self.unlock()
+        return AuthenError(reply)

@@ -223,3 +223,47 @@ class Orientation(enum.Enum):
     RIGHT_UP = 4
     FACE_UP = 5
     FACE_DOWN = 6
+
+
+class PasswordType(enum.Enum):
+    """
+    设备密码类型。\n
+    :ivar PASSWORD_WEAK: 简单密码
+    :ivar PASSWORD_STRONG: 复杂密码
+    :ivar PASSWORD_GRAPHIC: 图形密码
+    :ivar PASSWORD_NONE: 无密码
+    """
+    PASSWORD_WEAK = 0
+    PASSWORD_STRONG = 1
+    PASSWORD_GRAPHIC = 2
+    PASSWORD_NONE = 3
+
+
+class AuthenError(enum.Enum):
+    """
+    口令认证错误码。\n
+    :ivar AUTHEN_OK: 无错误
+    :ivar AUTHEN_REPLY_ERROR: 获取结果失败
+    :ivar AUTHEN_PASSWORD_IS_EMPTY: 密码为空
+    :ivar AUTHEN_TYPE_IS_INVALID: 类型无效
+    :ivar AUTHEN_PASSWORD_TYPE_MISMATCH: 密码类型不匹配
+    :ivar AUTHEN_PASSWORD_VERIFY_FAILED: 密码认证失败
+    :ivar AUTHEN_PASSWORD_EXISTED: 密码已存在
+    :ivar AUTHEN_PERMISSION_DENIED: 无敏感权限
+    :ivar AUTHEN_MAX_RETRY_INVALID: 最大重试次数错误
+    :ivar AUTHEN_PARAMETER_INVALID: 参数无效
+    :ivar AUTHEN_LOCKOUT: 锁定
+    :ivar AUTHEN_PASSWORD_EQUAL: 相同密码
+    """
+    AUTHEN_OK = 0
+    AUTHEN_REPLY_ERROR = 1
+    AUTHEN_PASSWORD_IS_EMPTY = 2
+    AUTHEN_TYPE_IS_INVALID = 3
+    AUTHEN_PASSWORD_TYPE_MISMATCH = 4
+    AUTHEN_PASSWORD_VERIFY_FAILED = 5
+    AUTHEN_PASSWORD_EXISTED = 6
+    AUTHEN_PERMISSION_DENIED = 7
+    AUTHEN_MAX_RETRY_INVALID = 8
+    AUTHEN_PARAMETER_INVALID = 9
+    AUTHEN_LOCKOUT = 10
+    AUTHEN_PASSWORD_EQUAL = 11

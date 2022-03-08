@@ -760,7 +760,7 @@ class Item:
         :return: 成功返回True，否则为False
         """
         if self.node is not None:
-            self.device.click(Point(self.__center_x_to_global, self.__center_y_to_global), delay)
+            return self.device.click(Point(self.__center_x_to_global, self.__center_y_to_global), delay)
         return False
 
     def click_exist(self, delay: int = 0, timeout: int = None) -> bool:
@@ -768,12 +768,11 @@ class Item:
         判断元素控件是否显示，显示则执行点击操作。\n
         :param delay: 点击延时时间(单位:毫秒), 默认无延时
         :param timeout: 超时时间(单位:秒)，默认为框架超时时间
-        :return: 成功返回True，否则为False
+        :return: 点击成功返回True，否则返回False，若不存在则中断
         """
         if self.exist(timeout):
-            self.device.click(Point(self.rect[0][1]+1, self.rect[0][0]+1), delay)
-            return True
-        return False
+            return self.device.click(Point(self.rect[0][1]+1, self.rect[0][0]+1), delay)
+        assert False
 
     def submit_string(self, text: str) -> bool:
         """
