@@ -20,20 +20,25 @@ from sseclient import SSEClient
 
 
 class Connection:
-    host = ""
-    port = 0
-    defaultTimeout = 30
+
+    def __init__(self, host: str = None, port: int = None, d=None):
+        self.host = host
+        self.port = port
+        self.device = d
+        self.default_timeout = self.device.default_timeout
 
     def connect(self):
         request = urllib.request.Request("http://" + self.host + ":" + str(self.port))
-        reply = urllib.request.urlopen(request, timeout=self.defaultTimeout)
+        reply = urllib.request.urlopen(request, timeout=self.default_timeout)
         if reply.status == 200:
             return True
         return False
 
-    def get(self, path, args="", headers=None, timeout=defaultTimeout):
+    def get(self, path, args="", headers=None, timeout=None):
         if headers is None:
             headers = {'Accept': 'text/plain; charset=UTF-8'}
+        if not timeout:
+            timeout = self.default_timeout
         try:
             request = urllib.request.Request(url="http://" + self.host + ":" + str(self.port) + "/" + path + "?" + args,
                                              headers=headers, method="GET")
@@ -45,7 +50,9 @@ class Connection:
             reply = urllib.request.urlopen(request, timeout=timeout)
         return reply
 
-    def post(self, path, data=None, headers=None, timeout=defaultTimeout):
+    def post(self, path, data=None, headers=None, timeout=None):
+        if not timeout:
+            timeout = self.default_timeout
         request = urllib.request.Request(url="http://" + self.host + ":" + str(self.port) + "/" + path, data=data,
                                          headers=headers, method="POST")
         reply = urllib.request.urlopen(request, timeout=timeout)

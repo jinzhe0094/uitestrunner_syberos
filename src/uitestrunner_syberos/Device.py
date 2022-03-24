@@ -18,6 +18,7 @@ import io
 import os
 import platform
 import re
+import sys
 import threading
 import ctypes
 from ctypes import *
@@ -86,18 +87,17 @@ class Device(Events):
     :ivar default_timeout: 框架整体的默认超时时间
     :ivar control_host_type: 控制端平台类型，枚举类型Controller
     """
-    con = Connection()
     __os_version = ""
     __serial_number = ""
     xml_string = ""
-    __xpath_file = "./xpath_list.ini"
-    __environment_file = "./environment.ini"
-    __screenshots = "./screenshots/"
+    __xpath_file = sys.path[0] + "/xpath_list.ini"
+    __environment_file = sys.path[0] + "/environment.ini"
+    __screenshots = sys.path[0] + "/screenshots/"
     default_timeout = 30
     __syslog_output = False
     __syslog_output_keyword = ""
     __syslog_save = False
-    __syslog_save_path = "./syslog/"
+    __syslog_save_path = sys.path[0] + "/syslog/"
     __syslog_save_name = ""
     __syslog_save_keyword = ""
     watcher_list = []
@@ -106,14 +106,25 @@ class Device(Events):
     __height = 0
     __syslog_tid = None
     control_host_type = Controller.ANYWHERE
-    __ocr_mods = "./ocr_models/"
+    __ocr_mods = sys.path[0] + "/ocr_models/"
+    __host = "192.168.100.100"
+    __port = 10008
 
-    def __init__(self, host: str = "192.168.100.100", port: int = 10008, _main: bool = True):
+    def __init__(self, host: str = None, port: int = None, _main: bool = True):
         super().__init__(d=self)
         warnings.simplefilter('ignore', ResourceWarning)
-        self.con.host = host
-        self.con.port = port
+        if self.has_environment("HOST"):
+            self.__host = self.get_environment("HOST")
+        if self.has_environment("PORT"):
+            self.__port = int(self.get_environment("PORT"))
+        if host is not None:
+            self.__host = host
+        if port is not None:
+            self.__port = port
+        self.con = Connection(self.__host, self.__port, self)
         self.con.connect()
+        if self.has_environment("TIMEOUT"):
+            self.default_timeout = int(self.get_environment("TIMEOUT"))
         self.__path = os.path.realpath(__file__).split(os.path.basename(__file__))[0]
         self.__serial_number = str(self.con.get(path="getSerialNumber").read(), 'utf-8')
         self.__os_version = str(self.con.get(path="getOsVersion").read(), 'utf-8')
@@ -131,7 +142,7 @@ class Device(Events):
                 os.mkdir(self.__ocr_mods)
             else:
                 if not Path(self.__ocr_mods).is_dir():
-                    os.remove("./ocr_models")
+                    os.remove(sys.path[0] + "/ocr_models")
                     os.mkdir(self.__ocr_mods)
             for mod in os.listdir(ocrCraftModel4uts.get_path()):
                 if not Path(ocrCraftModel4uts.get_path() + mod).is_dir():
@@ -263,11 +274,11 @@ class Device(Events):
         """
         return self.__syslog_output_keyword
 
-    def set_syslog_save_start(self, save_path: str = "./syslog/", save_name: str = None,
+    def set_syslog_save_start(self, save_path: str = sys.path[0] + "/syslog/", save_name: str = None,
                               save_keyword: str = "") -> None:
         """
         设置保存设备log开始。\n
-        :param save_path: 保存文件路径，指定一个文件夹的相对或绝对路径，默认在当前工作目录下的syslog文件夹
+        :param save_path: 保存文件路径，指定一个文件夹的相对或绝对路径，默认在当前脚本目录下的syslog文件夹
         :param save_name: log文件保存名称，默认以时间戳命名
         :param save_keyword: 筛选关键字(筛选最小单位行)，如果为空则全部保存
         :return: 无
@@ -324,7 +335,7 @@ class Device(Events):
 
     def set_xpath_list(self, path: str) -> None:
         """
-        设置存放xpath信息的ini文件路径(默认为当前工作目录下的xpath_list.ini)。\n
+        设置存放xpath信息的ini文件路径(默认为当前脚本目录下的xpath_list.ini)。\n
         :param path: 文件路径
         :return: 无
         """
@@ -332,7 +343,7 @@ class Device(Events):
 
     def set_screenshots_path(self, path: str) -> None:
         """
-        设置存放系统截图的文件夹路径(默认为当前工作目录下的screenshots文件夹)。\n
+        设置存放系统截图的文件夹路径(默认为当前脚本目录下的screenshots文件夹)。\n
         :param path: 文件夹路径
         :return: 无
         """
@@ -341,7 +352,7 @@ class Device(Events):
     def screenshot(self, path: str = __screenshots) -> str:
         """
         获取设备当前屏幕截图。\n
-        :param path: 截图存放路径(默认为前工作目录下的screenshots文件夹或者用户通过Device.set_screenshots_path(path: str)接口设置的路径)
+        :param path: 截图存放路径(默认为前脚本目录下的screenshots文件夹或者用户通过Device.set_screenshots_path(path: str)接口设置的路径)
         :return: 截图名称
         """
         if not os.path.exists(path):
@@ -403,8 +414,24 @@ class Device(Events):
             f = open(self.__xpath_file, "w")
             f.close()
         conf = configparser.ConfigParser()
-        conf.read(self.__xpath_file)
+        conf.read(self.__xpath_file, encoding='utf-8')
         return conf.get(sop_id, key)
+
+    def has_environment(self, key: str, module: str = "General") -> bool:
+        """
+        获取指定环境变量是否存在。\n
+        :param key: 键
+        :param module: 模块名称，默认值：General
+        :return:
+        """
+        if not os.path.exists(self.__environment_file):
+            f = open(self.__environment_file, "w")
+            f.close()
+        conf = configparser.ConfigParser()
+        conf.read(self.__environment_file)
+        if not conf.has_section(module):
+            return False
+        return conf.has_option(module, key)
 
     def get_environment(self, key: str, module: str = "General") -> str:
         """
@@ -468,7 +495,7 @@ class Device(Events):
         :return: TextItemFromOcr对象列表
         """
         image_base64 = item.grab_image_to_base64()
-        image = open("./orc_temp_image.png", "wb")
+        image = open(sys.path[0] + "/orc_temp_image.png", "wb")
         imdata = base64.b64decode(image_base64)
         image.write(imdata)
         image.close()
@@ -477,7 +504,7 @@ class Device(Events):
         width, height = im.size
         px = item.center_x_to_global() - (width / 2)
         py = item.center_y_to_global() - (height / 2)
-        text_item_info_list = reader.readtext('./orc_temp_image.png')
+        text_item_info_list = reader.readtext(sys.path[0] + '/orc_temp_image.png')
         text_item_list = []
         for text_item_info in text_item_info_list:
             x = text_item_info[0][0][0]

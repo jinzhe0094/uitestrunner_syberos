@@ -1,5 +1,6 @@
 sseclient
 paramiko
+PyNaCl
 scp
 lxml
 urllib3

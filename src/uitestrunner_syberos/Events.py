@@ -221,7 +221,13 @@ class Events:
         while int(time.time()) < die_time:
             if self.__reply_status_check(self.device.con.get(path="sendHomeKeyEvent")):
                 self.device.refresh_layout()
-                selector = etree.XML(self.device.xml_string.encode('utf-8'))
+                selector = None
+                for i in range(0, 10):
+                    try:
+                        selector = etree.XML(self.device.xml_string.encode('utf-8'))
+                        break
+                    except etree.XMLSyntaxError:
+                        continue
                 if selector.get("sopId") == "home-screen(FAKE_VALUE)":
                     return True
                 else:
@@ -281,13 +287,16 @@ class Events:
         """
         return ScreenOrientation(int(str(self.device.con.get(path="getScreenOrientation").read(), 'utf-8')))
 
-    def upload_file(self, file_path: str, remote_path: str) -> bool:
+    def upload_file(self, file_path: str, remote_path: str, timeout: int = None) -> bool:
         """
         上传文件至设备。\n
         :param file_path: 控制端原文件路径
         :param remote_path: 设备中目标路径
+        :param timeout: 超时时间(单位:秒)，默认为框架超时时间
         :return: 成功返回True，否则为False
         """
+        if not timeout:
+            timeout = self.device.default_timeout
         file_name = file_path.split("/")[len(file_path.split("/")) - 1]
         if file_name == "":
             raise Exception('error: the file path format is incorrect, and the transfer folder is not supported')
@@ -303,7 +312,7 @@ class Events:
         encode_data = encode_multipart_formdata(data)
         data = encode_data[0]
         header['Content-Type'] = encode_data[1]
-        return bool(int(str(self.device.con.post(path="upLoadFile", headers=header, data=data).read(), 'utf-8')))
+        return bool(int(str(self.device.con.post(path="upLoadFile", headers=header, data=data, timeout=timeout).read(), 'utf-8')))
 
     def file_exist(self, file_path: str) -> bool:
         """
@@ -533,7 +542,13 @@ class Events:
         die_time = int(time.time()) + timeout
         while int(time.time()) < die_time:
             self.device.refresh_layout()
-            selector = etree.XML(self.device.xml_string.encode('utf-8'))
+            selector = None
+            for i in range(0, 10):
+                try:
+                    selector = etree.XML(self.device.xml_string.encode('utf-8'))
+                    break
+                except etree.XMLSyntaxError:
+                    continue
             if selector.get("sopId") == sopid:
                 return True
             self.device.con.get(path="launchApp", args="sopid=" + sopid + "&" + "uiappid=" + uiappid)
@@ -557,7 +572,13 @@ class Events:
         :return: 在最上层返回True，否则为False
         """
         self.device.refresh_layout()
-        selector = etree.XML(self.device.xml_string.encode('utf-8'))
+        selector = None
+        for i in range(0, 10):
+            try:
+                selector = etree.XML(self.device.xml_string.encode('utf-8'))
+                break
+            except etree.XMLSyntaxError:
+                continue
         if selector.get("sopId") == sopid:
             return True
         return False

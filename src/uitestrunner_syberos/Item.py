@@ -84,7 +84,13 @@ class Item:
     def __refresh_node(self):
         self.node = None
         self.device.refresh_layout()
-        selector = etree.XML(self.device.xml_string.encode('utf-8'))
+        selector = None
+        for i in range(0, 10):
+            try:
+                selector = etree.XML(self.device.xml_string.encode('utf-8'))
+                break
+            except etree.XMLSyntaxError:
+                continue
         nodes = selector.xpath(self.xpath)
         if len(nodes) > 0 and selector.get("sopId") == self.sopid:
             self.node = nodes[0]

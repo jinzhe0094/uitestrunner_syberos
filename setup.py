@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 setup(
     name='uitestrunner_syberos',
-    version='1.0.4',
+    version='1.0.7',
     author='Jinzhe Wang',
     description='A ui automated testing tool for SyberOS',
     author_email='wangjinzhe@syberos.com',
@@ -31,6 +31,7 @@ setup(
     },
     install_requires=["sseclient",
                       "paramiko",
+                      "PyNaCl",
                       "scp",
                       "lxml",
                       "urllib3",
@@ -50,5 +51,5 @@ setup(
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.8, <3.10"
+    python_requires=">=3.6, <=3.9"
 )
