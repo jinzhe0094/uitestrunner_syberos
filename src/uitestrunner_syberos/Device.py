@@ -51,7 +51,8 @@ def _watcher_process(main_pid, host, port, conn):
 def _start_watcher(host, port, watcher_conn):
     watcher_process = Process(target=_watcher_process, args=(os.getpid(), host, port, watcher_conn))
     watcher_process.daemon = True
-    watcher_process.start()
+    if __name__ == '__main__':
+        watcher_process.start()
 
 
 def _web_driver_daemon(main_pid, wb_pid, parent_pid):
@@ -74,7 +75,8 @@ def _create_orphan_thread(main_pid, wb_pid):
 def _start_web_driver_daemon(wb_pid):
     orphan_thread = Process(target=_create_orphan_thread, args=(os.getpid(), wb_pid))
     orphan_thread.daemon = False
-    orphan_thread.start()
+    if __name__ == '__main__':
+        orphan_thread.start()
 
 
 class Device(Events):
@@ -104,7 +106,6 @@ class Device(Events):
     __main_conn, __watcher_conn = Pipe()
     __width = 0
     __height = 0
-    __syslog_tid = None
     control_host_type = Controller.ANYWHERE
     __ocr_mods = sys.path[0] + "/ocr_models/"
     __host = "192.168.100.100"
@@ -224,21 +225,12 @@ class Device(Events):
                 self.watcher_list.remove(watcher)
         self.__main_conn.send({'watcher_list': self.watcher_list})
 
-    def __logger_pingpong(self):
-        self.con.get(path="SSEPingpong", args="tid=" + str(self.__syslog_tid))
-        threading.Timer(5, self.__logger_pingpong).start()
-
     def __logger(self):
         syslog_save_path = ""
         syslog_file = None
-        first = True
         messages = self.device.con.sse("SysLogger")
         for msg in messages:
             log_str = str(msg.data)
-            if first:
-                self.__syslog_tid = log_str
-                threading.Timer(5, self.__logger_pingpong).start()
-                first = False
             if self.__syslog_output and re.search(self.__syslog_output_keyword, log_str):
                 print(log_str)
             if self.__syslog_save and re.search(self.__syslog_save_keyword, log_str):
@@ -514,3 +506,13 @@ class Device(Events):
             text = text_item_info[1]
             text_item_list.append(TextItemFromOcr(x + px, y + py, w, h, text, self))
         return text_item_list
+
+    def support_rotate_screen(self) -> bool:
+        """
+        读取配置文件获取设备是否支持旋转屏幕。\n
+        :return: 支持返回True，否则为False
+        """
+        if self.has_environment("ROTATE_SCREEN"):
+            if not bool(int(self.get_environment("ROTATE_SCREEN"))):
+                return False
+        return True

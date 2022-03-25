@@ -265,6 +265,8 @@ class Events:
         :param allowed: 开关状态，True为开启，False为关闭
         :return: 成功返回True，否则为False
         """
+        if not self.device.support_rotate_screen():
+            return False
         if allowed:
             return self.__reply_status_check(self.device.con.get(path="setRotationAllowed", args="allowed=1"))
         else:
@@ -275,6 +277,8 @@ class Events:
         获取设备自动旋转屏幕开关状态。\n
         :return: 开关状态，True为开启，False为关闭
         """
+        if not self.device.support_rotate_screen():
+            return False
         reply = int(str(self.device.con.get(path="getRotationAllowed").read(), 'utf-8'))
         if reply == 1:
             return True

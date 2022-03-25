@@ -141,7 +141,7 @@ def worker(step):
     wait = False
 
 
-print('\033[1mWelcome to use gui auto test framework for SyberOS.(1.0.7)\033[0m')
+print('\033[1mWelcome to use gui auto test framework for SyberOS.(1.0.8)\033[0m')
 sop_name = "data/server.sop"
 if pkg_resources.resource_exists(__name__, sop_name):
     syslog_thread = threading.Thread(target=worker, daemon=True, args=(1,))

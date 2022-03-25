@@ -212,7 +212,7 @@ class Orientation(enum.Enum):
     :ivar TOP_UP: 上边框朝上
     :ivar TOP_DOWN: 上边框朝下
     :ivar LEFT_UP: 左边框朝上
-    :ivar RIGHT_UP: 有边框朝上
+    :ivar RIGHT_UP: 右边框朝上
     :ivar FACE_UP: 正面朝上
     :ivar FACE_DOWN: 正面朝下
     """
