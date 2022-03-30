@@ -220,18 +220,17 @@ class Events:
         die_time = int(time.time()) + timeout
         while int(time.time()) < die_time:
             if self.__reply_status_check(self.device.con.get(path="sendHomeKeyEvent")):
-                self.device.refresh_layout()
-                selector = None
                 for i in range(0, 10):
                     try:
+                        self.device.refresh_layout()
                         selector = etree.XML(self.device.xml_string.encode('utf-8'))
+                        if selector.get("sopId") == "home-screen(FAKE_VALUE)":
+                            return True
+                        else:
+                            self.device.con.get(path="sendHomeKeyEvent")
                         break
                     except etree.XMLSyntaxError:
                         continue
-                if selector.get("sopId") == "home-screen(FAKE_VALUE)":
-                    return True
-                else:
-                    self.device.con.get(path="sendHomeKeyEvent")
             sleep(0.5)
         return False
 
@@ -316,7 +315,8 @@ class Events:
         encode_data = encode_multipart_formdata(data)
         data = encode_data[0]
         header['Content-Type'] = encode_data[1]
-        return bool(int(str(self.device.con.post(path="upLoadFile", headers=header, data=data, timeout=timeout).read(), 'utf-8')))
+        return bool(int(str(
+            self.device.con.post(path="upLoadFile", headers=header, data=data, timeout=timeout).read(), 'utf-8')))
 
     def file_exist(self, file_path: str) -> bool:
         """
@@ -545,16 +545,15 @@ class Events:
             timeout = self.device.default_timeout
         die_time = int(time.time()) + timeout
         while int(time.time()) < die_time:
-            self.device.refresh_layout()
-            selector = None
             for i in range(0, 10):
                 try:
+                    self.device.refresh_layout()
                     selector = etree.XML(self.device.xml_string.encode('utf-8'))
+                    if selector.get("sopId") == sopid:
+                        return True
                     break
                 except etree.XMLSyntaxError:
                     continue
-            if selector.get("sopId") == sopid:
-                return True
             self.device.con.get(path="launchApp", args="sopid=" + sopid + "&" + "uiappid=" + uiappid)
             sleep(1)
         return False
@@ -575,16 +574,15 @@ class Events:
         :param sopid: 指定应用的sopid
         :return: 在最上层返回True，否则为False
         """
-        self.device.refresh_layout()
-        selector = None
         for i in range(0, 10):
             try:
+                self.device.refresh_layout()
                 selector = etree.XML(self.device.xml_string.encode('utf-8'))
+                if selector.get("sopId") == sopid:
+                    return True
                 break
             except etree.XMLSyntaxError:
                 continue
-        if selector.get("sopId") == sopid:
-            return True
         return False
 
     def get_volume(self, role_type: AudioManagerRoleType) -> int:

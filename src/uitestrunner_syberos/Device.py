@@ -95,7 +95,7 @@ class Device(Events):
     __xpath_file = sys.path[0] + "/xpath_list.ini"
     __environment_file = sys.path[0] + "/environment.ini"
     __screenshots = sys.path[0] + "/screenshots/"
-    default_timeout = 30
+    default_timeout = 60
     __syslog_output = False
     __syslog_output_keyword = ""
     __syslog_save = False
@@ -118,14 +118,14 @@ class Device(Events):
             self.__host = self.get_environment("HOST")
         if self.has_environment("PORT"):
             self.__port = int(self.get_environment("PORT"))
+        if self.has_environment("TIMEOUT"):
+            self.default_timeout = int(self.get_environment("TIMEOUT"))
         if host is not None:
             self.__host = host
         if port is not None:
             self.__port = port
         self.con = Connection(self.__host, self.__port, self)
         self.con.connect()
-        if self.has_environment("TIMEOUT"):
-            self.default_timeout = int(self.get_environment("TIMEOUT"))
         self.__path = os.path.realpath(__file__).split(os.path.basename(__file__))[0]
         self.__serial_number = str(self.con.get(path="getSerialNumber").read(), 'utf-8')
         self.__os_version = str(self.con.get(path="getOsVersion").read(), 'utf-8')
@@ -444,7 +444,7 @@ class Device(Events):
         刷新当前设备的UI布局信息。\n
         :return: 无
         """
-        self.xml_string = str(self.con.get(path="getLayoutXML").read(), 'utf-8')
+        self.xml_string = str(self.con.get(path="getLayoutXML").read(), 'utf-8').replace('\x08', '')
 
     def os_version(self) -> str:
         """
