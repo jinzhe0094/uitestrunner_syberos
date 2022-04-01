@@ -31,6 +31,7 @@ from .DataStruct import *
 import operator
 from functools import reduce
 from . import Device
+from typing import List, Dict
 
 
 html_string_1 = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><title>render" \
@@ -65,84 +66,260 @@ class Item:
     :ivar node: 对应的xml节点对象
     :ivar xpath: xpath字符串
     """
-    node = None
-    xpath = ""
-    device: Device = None
-    sopid = ""
     __display_width = 0
     __display_height = 0
-    rect = []
 
-    def __init__(self, d: Device, s: str = "", xpath: str = ""):
+    def __init__(self, d: Device, s: str = "", xpath: str = "", node=None):
+        self.rect = []
+        self.__attributes = {}
+        self.__absolute_xpath = ""
+        self.__index_by_same_tag = 0
         self.sopid = s
         self.device = d
         self.__display_width = self.device.display_width()
         self.__display_height = self.device.display_height()
         self.xpath = xpath
+        self.node = node
         self.__refresh_node()
 
-    def __refresh_node(self):
-        self.node = None
-        self.device.refresh_layout()
-        selector = None
-        for i in range(0, 10):
-            try:
-                selector = etree.XML(self.device.xml_string.encode('utf-8'))
-                break
-            except etree.XMLSyntaxError:
-                continue
-        nodes = selector.xpath(self.xpath)
-        if len(nodes) > 0 and selector.get("sopId") == self.sopid:
-            self.node = nodes[0]
-            self.__refresh_attribute()
+    def __generate_absolute_xpath(self, node):
+        if node.getparent() is not None:
+            bor_list = list(node.getparent())
+            if len(bor_list) > 1:
+                count = 0
+                index = 0
+                for bn in bor_list:
+                    if bn.tag == node.tag:
+                        count += 1
+                        if bn == node:
+                            index = count
+                if count > 1:
+                    self.__index_by_same_tag = index
+                    self.__absolute_xpath = "/" + node.tag + "[" + str(index) + "]" + self.__absolute_xpath
+                else:
+                    self.__absolute_xpath = "/" + node.tag + self.__absolute_xpath
+            else:
+                self.__absolute_xpath = "/" + node.tag + self.__absolute_xpath
+            self.__generate_absolute_xpath(node.getparent())
         else:
+            self.__absolute_xpath = "/" + node.tag + self.__absolute_xpath
+
+    def __refresh_node(self):
+        self.device.refresh_layout()
+        if self.xpath != "":
+            for i in range(0, 10):
+                try:
+                    selector = etree.XML(self.device.xml_string.encode('utf-8'))
+                    nodes = selector.xpath(self.xpath)
+                    if len(nodes) > 0 and selector.get("sopId") == self.sopid:
+                        self.__generate_absolute_xpath(nodes[0])
+                        self.node = nodes[0]
+                    break
+                except etree.XMLSyntaxError:
+                    self.device.refresh_layout()
+                    continue
+        else:
+            self.__generate_absolute_xpath(self.node)
+            self.xpath = self.__absolute_xpath
+        if self.node is None:
             self.__init_attribute()
+            return
+        if self.node.getparent() is None:
+            self.__init_attribute()
+            return
+        if self.node.getparent().getparent() is None:
+            self.__init_attribute()
+            return
+        self.__refresh_attribute()
 
     def __refresh_attribute(self):
-        self.__x = int(round(float(self.node.get("x"))))
-        self.__y = int(round(float(self.node.get("y"))))
-        self.__center_x_to_item = int(round(float(self.node.get("centerXToItem"))))
-        self.__center_y_to_item = int(round(float(self.node.get("centerYToItem"))))
-        self.__center_x_to_global = int(round(float(self.node.get("centerXToGlobal"))))
-        self.__center_y_to_global = int(round(float(self.node.get("centerYToGlobal"))))
-        self.__z = int(self.node.get("z"))
-        self.__height = int(round(float(self.node.get("height"))))
-        self.__width = int(round(float(self.node.get("width"))))
-        self.__tempId = self.node.get("tempID")
-        self.__text = self.node.get("text")
-        self.__objectName = self.node.get("objectName")
-        self.__className = self.node.tag
-        self.__opacity = float(self.node.get("opacity"))
-        self.__enabled = bool(int(self.node.get("enabled")))
-        self.__visible = bool(int(self.node.get("visible")))
-        self.__focus = bool(int(self.node.get("focus")))
-        self.__scale = float(self.node.get("scale"))
-        self.__rotation = int(self.node.get("rotation"))
-        self.__clip = bool(int(self.node.get("clip")))
-        self.__has_contents = bool(int(self.node.get("hasContents")))
+        self.__attributes["x"] = int(round(float(self.node.get("x"))))
+        self.__attributes["y"] = int(round(float(self.node.get("y"))))
+        self.__attributes["center_x_to_item"] = int(round(float(self.node.get("centerXToItem"))))
+        self.__attributes["center_y_to_item"] = int(round(float(self.node.get("centerYToItem"))))
+        self.__attributes["center_x_to_global"] = int(round(float(self.node.get("centerXToGlobal"))))
+        self.__attributes["center_y_to_global"] = int(round(float(self.node.get("centerYToGlobal"))))
+        self.__attributes["z"] = int(self.node.get("z"))
+        self.__attributes["height"] = int(round(float(self.node.get("height"))))
+        self.__attributes["width"] = int(round(float(self.node.get("width"))))
+        self.__attributes["temp_id"] = self.node.get("tempID")
+        self.__attributes["text"] = self.node.get("text")
+        self.__attributes["object_name"] = self.node.get("objectName")
+        self.__attributes["class_name"] = self.node.tag
+        self.__attributes["opacity"] = float(self.node.get("opacity"))
+        self.__attributes["enabled"] = bool(int(self.node.get("enabled")))
+        self.__attributes["visible"] = bool(int(self.node.get("visible")))
+        self.__attributes["focus"] = bool(int(self.node.get("focus")))
+        self.__attributes["scale"] = float(self.node.get("scale"))
+        self.__attributes["rotation"] = int(self.node.get("rotation"))
+        self.__attributes["clip"] = bool(int(self.node.get("clip")))
+        self.__attributes["has_contents"] = bool(int(self.node.get("hasContents")))
 
     def __init_attribute(self):
-        self.__text = str()
-        self.__tempId = str()
-        self.__x = int()
-        self.__y = int()
-        self.__z = int()
-        self.__center_x_to_item = int()
-        self.__center_y_to_item = int()
-        self.__center_x_to_global = int()
-        self.__center_y_to_global = int()
-        self.__height = int()
-        self.__width = int()
-        self.__className = str()
-        self.__objectName = str()
-        self.__opacity = float()
-        self.__focus = bool()
-        self.__enabled = bool()
-        self.__visible = bool()
-        self.__scale = float()
-        self.__rotation = int()
-        self.__clip = bool()
-        self.__has_contents = bool()
+        self.__attributes["text"] = str()
+        self.__attributes["temp_id"] = str()
+        self.__attributes["x"] = int()
+        self.__attributes["y"] = int()
+        self.__attributes["z"] = int()
+        self.__attributes["center_x_to_item"] = int()
+        self.__attributes["center_y_to_item"] = int()
+        self.__attributes["center_x_to_global"] = int()
+        self.__attributes["center_y_to_global"] = int()
+        self.__attributes["height"] = int()
+        self.__attributes["width"] = int()
+        self.__attributes["class_name"] = str()
+        self.__attributes["object_name"] = str()
+        self.__attributes["opacity"] = float()
+        self.__attributes["focus"] = bool()
+        self.__attributes["enabled"] = bool()
+        self.__attributes["visible"] = bool()
+        self.__attributes["scale"] = float()
+        self.__attributes["rotation"] = int()
+        self.__attributes["clip"] = bool()
+        self.__attributes["has_contents"] = bool()
+
+    def attributes(self, refresh: bool = False) -> Dict:
+        """
+        获取当前Item对象的属性字典。\n
+        :param refresh: 是否刷新布局信息(默认值False)
+        :return: 属性字典
+        """
+        if refresh:
+            self.__refresh_node()
+        return self.__attributes
+
+    def parent(self, refresh: bool = False) -> 'Item':
+        """
+        获取当前Item对象的父对象，如没有则返回None。\n
+        :param refresh: 是否刷新布局信息(默认值False)
+        :return: 父亲对象或None
+        """
+        if refresh:
+            self.__refresh_node()
+        if self.node is None:
+            return None
+        if self.node.getparent() is None:
+            return None
+        return Item(self.device, self.sopid, "", self.node.getparent())
+
+    def children(self, filter_condition: dict = None, refresh: bool = False) -> List['Item']:
+        """
+        获取当前Item对象的子对象列表。\n
+        :param filter_condition: 用于筛选子对象的属性条件字典
+        :param refresh: 是否刷新布局信息(默认值False)
+        :return: 子对象列表
+        """
+        if refresh:
+            self.__refresh_node()
+        children = []
+        if self.node is None:
+            return children
+        if filter_condition is not None:
+            for key in filter_condition.keys():
+                if key not in self.__attributes.keys():
+                    return children
+            for node in list(self.node):
+                i = Item(self.device, self.sopid, "", node)
+                flag = 0
+                for key in filter_condition.keys():
+                    if i.attributes()[key] == filter_condition[key]:
+                        flag += 1
+                if flag == len(filter_condition):
+                    children.append(i)
+        else:
+            for node in list(self.node):
+                children.append(Item(self.device, self.sopid, "", node))
+        return children
+
+    def previous(self, refresh: bool = False) -> 'Item':
+        """
+        获取当前Item对象的前一位兄弟对象，如没有则返回None。\n
+        :param refresh: 是否刷新布局信息(默认值False)
+        :return: 前一位兄弟对象或None
+        """
+        if refresh:
+            self.__refresh_node()
+        if self.node is None:
+            return None
+        if self.node.getparent() is None:
+            return None
+        return Item(self.device, self.sopid, "", self.node.getprevious())
+
+    def previous_by_same_tag(self, refresh: bool = False) -> 'Item':
+        """
+        获取当前Item对象的前一位同类兄弟对象，如没有则返回None。\n
+        :param refresh: 是否刷新布局信息(默认值False)
+        :return: 前一位同类兄弟对象或None
+        """
+        if refresh:
+            self.__refresh_node()
+        if self.node is None:
+            return None
+        if self.node.getparent() is None:
+            return None
+        pn = self.node.getprevious()
+        while previous_i:
+            if pn.tag == self.node.tag:
+                return Item(self.device, self.sopid, "", pn)
+            pn = pn.getprevious()
+        return None
+
+    def next(self, refresh: bool = False) -> 'Item':
+        """
+        获取当前Item对象的后一位兄弟对象，如没有则返回None。\n
+        :param refresh: 是否刷新布局信息(默认值False)
+        :return: 后一位兄弟对象或None
+        """
+        if refresh:
+            self.__refresh_node()
+        if self.node is None:
+            return None
+        if self.node.getparent() is None:
+            return None
+        return Item(self.device, self.sopid, "", self.node.getnext())
+
+    def next_by_same_tag(self, refresh: bool = False) -> 'Item':
+        """
+        获取当前Item对象的后一位同类兄弟对象，如没有则返回None。\n
+        :param refresh: 是否刷新布局信息(默认值False)
+        :return: 后一位同类兄弟对象或None
+        """
+        if refresh:
+            self.__refresh_node()
+        if self.node is None:
+            return None
+        if self.node.getparent() is None:
+            return None
+        nn = self.node.getnext()
+        while nn:
+            if nn.tag == self.node.tag:
+                return Item(self.device, self.sopid, "", nn)
+            nn = nn.getnext()
+        return None
+
+    def index(self, refresh: bool = False) -> int:
+        """
+        获取当前Item对象相对于所有兄弟对象的索引值。\n
+        :param refresh: 是否刷新布局信息(默认值False)
+        :return: 索引值
+        """
+        if refresh:
+            self.__refresh_node()
+        if self.node is None:
+            return 0
+        if self.node.getparent() is None:
+            return 0
+        return self.node.getparent().index(self.node)
+
+    def index_by_same_tag(self, refresh: bool = False) -> int:
+        """
+        获取当前Item对象相对于同类兄弟对象的索引值。\n
+        :param refresh: 是否刷新布局信息(默认值False)
+        :return: 索引值
+        """
+        if refresh:
+            self.__refresh_node()
+        return self.__index_by_same_tag
 
     def x(self, refresh: bool = False) -> int:
         """
@@ -152,7 +329,7 @@ class Item:
         """
         if refresh:
             self.__refresh_node()
-        return self.__x
+        return self.__attributes["x"]
 
     def y(self, refresh: bool = False) -> int:
         """
@@ -162,7 +339,7 @@ class Item:
         """
         if refresh:
             self.__refresh_node()
-        return self.__y
+        return self.__attributes["y"]
 
     def center_x_to_item(self, refresh: bool = False) -> int:
         """
@@ -172,7 +349,7 @@ class Item:
         """
         if refresh:
             self.__refresh_node()
-        return self.__center_x_to_item
+        return self.__attributes["center_x_to_item"]
 
     def center_y_to_item(self, refresh: bool = False) -> int:
         """
@@ -182,7 +359,7 @@ class Item:
         """
         if refresh:
             self.__refresh_node()
-        return self.__center_y_to_item
+        return self.__attributes["center_y_to_item"]
 
     def center_x_to_global(self, refresh: bool = False) -> int:
         """
@@ -192,7 +369,7 @@ class Item:
         """
         if refresh:
             self.__refresh_node()
-        return self.__center_x_to_global
+        return self.__attributes["center_x_to_global"]
 
     def center_y_to_global(self, refresh: bool = False) -> int:
         """
@@ -202,7 +379,7 @@ class Item:
         """
         if refresh:
             self.__refresh_node()
-        return self.__center_y_to_global
+        return self.__attributes["center_y_to_global"]
 
     def z(self, refresh: bool = False) -> int:
         """
@@ -212,7 +389,7 @@ class Item:
         """
         if refresh:
             self.__refresh_node()
-        return self.__z
+        return self.__attributes["z"]
 
     def scale(self, refresh: bool = False) -> float:
         """
@@ -222,7 +399,7 @@ class Item:
         """
         if refresh:
             self.__refresh_node()
-        return self.__scale
+        return self.__attributes["scale"]
 
     def rotation(self, refresh: bool = False) -> int:
         """
@@ -232,7 +409,7 @@ class Item:
         """
         if refresh:
             self.__refresh_node()
-        return self.__rotation
+        return self.__attributes["rotation"]
 
     def clip(self, refresh: bool = False) -> bool:
         """
@@ -242,7 +419,7 @@ class Item:
         """
         if refresh:
             self.__refresh_node()
-        return self.__clip
+        return self.__attributes["clip"]
 
     def height(self, refresh: bool = False) -> int:
         """
@@ -252,7 +429,7 @@ class Item:
         """
         if refresh:
             self.__refresh_node()
-        return self.__height
+        return self.__attributes["height"]
 
     def width(self, refresh: bool = False) -> int:
         """
@@ -262,7 +439,7 @@ class Item:
         """
         if refresh:
             self.__refresh_node()
-        return self.__width
+        return self.__attributes["width"]
 
     def temp_id(self, refresh: bool = False) -> str:
         """
@@ -272,7 +449,7 @@ class Item:
         """
         if refresh:
             self.__refresh_node()
-        return self.__tempId
+        return self.__attributes["temp_id"]
 
     def text(self, refresh: bool = False) -> str:
         """
@@ -282,7 +459,7 @@ class Item:
         """
         if refresh:
             self.__refresh_node()
-        return self.__text
+        return self.__attributes["text"]
 
     def object_name(self, refresh: bool = False) -> str:
         """
@@ -292,7 +469,7 @@ class Item:
         """
         if refresh:
             self.__refresh_node()
-        return self.__objectName
+        return self.__attributes["object_name"]
 
     def class_name(self, refresh: bool = False) -> str:
         """
@@ -302,7 +479,7 @@ class Item:
         """
         if refresh:
             self.__refresh_node()
-        return self.__className
+        return self.__attributes["class_name"]
 
     def opacity(self, refresh: bool = False) -> float:
         """
@@ -312,7 +489,7 @@ class Item:
         """
         if refresh:
             self.__refresh_node()
-        return self.__opacity
+        return self.__attributes["opacity"]
 
     def enabled(self, refresh: bool = False) -> bool:
         """
@@ -322,7 +499,7 @@ class Item:
         """
         if refresh:
             self.__refresh_node()
-        return self.__enabled
+        return self.__attributes["enabled"]
 
     def visible(self, refresh: bool = False) -> bool:
         """
@@ -332,7 +509,7 @@ class Item:
         """
         if refresh:
             self.__refresh_node()
-        return self.__visible
+        return self.__attributes["visible"]
 
     def focus(self, refresh: bool = False) -> bool:
         """
@@ -342,7 +519,7 @@ class Item:
         """
         if refresh:
             self.__refresh_node()
-        return self.__focus
+        return self.__attributes["focus"]
 
     def has_contents(self, refresh: bool = False) -> bool:
         """
@@ -352,7 +529,7 @@ class Item:
         """
         if refresh:
             self.__refresh_node()
-        return self.__has_contents
+        return self.__attributes["has_contents"]
 
     def exist(self, timeout: int = None) -> bool:
         """
@@ -375,11 +552,11 @@ class Item:
     def __exist(self):
         self.__refresh_node()
         if self.node is not None \
-                and self.__visible \
-                and self.__opacity > 0 \
-                and self.__scale != 0 \
-                and self.__width > 0 \
-                and self.__height > 0:
+                and self.__attributes["visible"] \
+                and self.__attributes["opacity"] > 0 \
+                and self.__attributes["scale"] != 0 \
+                and self.__attributes["width"] > 0 \
+                and self.__attributes["height"] > 0:
             image = []
             if self.device.control_host_type == Controller.ANYWHERE:
                 tree = xml.dom.minidom.parseString(self.device.xml_string)
@@ -391,7 +568,7 @@ class Item:
                             image = self.__img_cover(image, self.__xml_tree_traversed(n.childNodes, 1))
             else:
                 html_string = self.device.libsr.go(c_char_p(bytes(self.device.xml_string, "utf-8")),
-                                                   c_char_p(bytes(self.__tempId, "utf-8")),
+                                                   c_char_p(bytes(self.__attributes["temp_id"], "utf-8")),
                                                    c_int(self.__display_width),
                                                    c_int(self.__display_height))
                 self.device.webdriver.get("data:text/html;charset=utf-8," +
@@ -463,7 +640,7 @@ class Item:
             image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
             if has_contents or (node.nodeName == "QQuickLoader" and node.getAttribute("z") == "10000" and
                                 node.getAttribute("tempID") == "temp7"):
-                if node.getAttribute("tempID") == self.__tempId:
+                if node.getAttribute("tempID") == self.__attributes["temp_id"]:
                     cv2.rectangle(image, (0, 0), (width, height), (0, 0, 255), -1)
                 else:
                     cv2.rectangle(image, (0, 0), (width, height), (255, 0, 0), -1)
@@ -766,7 +943,7 @@ class Item:
         :return: 成功返回True，否则为False
         """
         if self.node is not None:
-            return self.device.click(Point(self.__center_x_to_global, self.__center_y_to_global), delay)
+            return self.device.click(Point(self.__attributes["center_x_to_global"], self.__attributes["center_y_to_global"]), delay)
         return False
 
     def click_exist(self, delay: int = 0, timeout: int = None) -> bool:
@@ -794,10 +971,10 @@ class Item:
         获取元素控件的显示范围截图。\n
         :return: 截图的base64形态
         """
-        return self.device.grab_image_to_base64(self.__center_x_to_global,
-                                                self.__center_y_to_global,
-                                                self.__width, self.__height,
-                                                self.__rotation, self.__scale)
+        return self.device.grab_image_to_base64(self.__attributes["center_x_to_global"],
+                                                self.__attributes["center_y_to_global"],
+                                                self.__attributes["width"], self.__attributes["height"],
+                                                self.__attributes["rotation"], self.__attributes["scale"])
 
     def contrast_picture(self, path: str) -> float:
         """

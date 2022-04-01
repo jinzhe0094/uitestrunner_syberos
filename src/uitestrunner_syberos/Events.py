@@ -27,7 +27,6 @@ class Events:
     """
     模拟事件类。
     """
-    device = None
 
     def __init__(self, d):
         self.device = d

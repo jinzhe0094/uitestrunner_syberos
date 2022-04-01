@@ -51,8 +51,7 @@ def _watcher_process(main_pid, host, port, conn):
 def _start_watcher(host, port, watcher_conn):
     watcher_process = Process(target=_watcher_process, args=(os.getpid(), host, port, watcher_conn))
     watcher_process.daemon = True
-    if __name__ == '__main__':
-        watcher_process.start()
+    watcher_process.start()
 
 
 def _web_driver_daemon(main_pid, wb_pid, parent_pid):
@@ -89,37 +88,36 @@ class Device(Events):
     :ivar default_timeout: 框架整体的默认超时时间
     :ivar control_host_type: 控制端平台类型，枚举类型Controller
     """
-    __os_version = ""
-    __serial_number = ""
-    xml_string = ""
-    __xpath_file = sys.path[0] + "/xpath_list.ini"
-    __environment_file = sys.path[0] + "/environment.ini"
-    __screenshots = sys.path[0] + "/screenshots/"
-    default_timeout = 60
-    __syslog_output = False
-    __syslog_output_keyword = ""
-    __syslog_save = False
-    __syslog_save_path = sys.path[0] + "/syslog/"
-    __syslog_save_name = ""
-    __syslog_save_keyword = ""
-    watcher_list = []
-    __main_conn, __watcher_conn = Pipe()
-    __width = 0
-    __height = 0
-    control_host_type = Controller.ANYWHERE
-    __ocr_mods = sys.path[0] + "/ocr_models/"
-    __host = "192.168.100.100"
-    __port = 10008
 
     def __init__(self, host: str = None, port: int = None, _main: bool = True):
         super().__init__(d=self)
         warnings.simplefilter('ignore', ResourceWarning)
+        self.xml_string = ""
+        self.__xpath_file = sys.path[0] + "/xpath_list.ini"
+        self.__environment_file = sys.path[0] + "/environment.ini"
+        self.__screenshots = sys.path[0] + "/screenshots/"
+        self.__syslog_output = False
+        self.__syslog_output_keyword = ""
+        self.__syslog_save = False
+        self.__syslog_save_path = sys.path[0] + "/syslog/"
+        self.__syslog_save_name = ""
+        self.__syslog_save_keyword = ""
+        self.watcher_list = []
+        self.__main_conn, self.__watcher_conn = Pipe()
+        self.__width = 0
+        self.__height = 0
+        self.control_host_type = Controller.ANYWHERE
+        self.__ocr_mods = sys.path[0] + "/ocr_models/"
+        self.__host = "192.168.100.100"
+        self.__port = 10008
         if self.has_environment("HOST"):
             self.__host = self.get_environment("HOST")
         if self.has_environment("PORT"):
             self.__port = int(self.get_environment("PORT"))
         if self.has_environment("TIMEOUT"):
             self.default_timeout = int(self.get_environment("TIMEOUT"))
+        else:
+            self.default_timeout = 60
         if host is not None:
             self.__host = host
         if port is not None:
@@ -341,12 +339,14 @@ class Device(Events):
         """
         self.__screenshots = path
 
-    def screenshot(self, path: str = __screenshots) -> str:
+    def screenshot(self, path: str = None) -> str:
         """
         获取设备当前屏幕截图。\n
         :param path: 截图存放路径(默认为前脚本目录下的screenshots文件夹或者用户通过Device.set_screenshots_path(path: str)接口设置的路径)
         :return: 截图名称
         """
+        if path is None:
+            path = self.__screenshots
         if not os.path.exists(path):
             os.makedirs(path)
         img_base64 = str(self.con.get(path="getScreenShot").read(), 'utf-8').split(',')[0]

@@ -21,7 +21,6 @@ class TextItemFromOcr:
     """
     ocr识别到的文本元素类型。
     """
-    device = None
 
     def __init__(self, x: int, y: int, w: int, h: int, text: str, d=None):
         self.device = d

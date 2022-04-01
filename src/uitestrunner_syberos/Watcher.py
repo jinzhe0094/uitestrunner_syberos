@@ -24,13 +24,12 @@ WatchContext_T = TypeVar('WatchContext_T', bound='WatchContext')
 
 
 class WatchWorker:
-    watch_data = {}
-    __watcher_list = []
 
     def __init__(self, d, conn, main_pid):
         self.device = d
         self.conn = conn
         self.main_pid = main_pid
+        self.__watcher_list = []
 
     def __get_list(self):
         if self.conn.poll():
@@ -77,7 +76,6 @@ class Watcher:
     """
     监视者类。
     """
-    __watcher_data = {}
 
     def __init__(self, data: dict, d):
         self.__watcher_data = data
@@ -104,8 +102,6 @@ class WatchContext:
     """
     监视者上下文类。
     """
-
-    __watcher_data = {}
 
     def __init__(self, data: dict, d):
         self.__watcher_data = data
