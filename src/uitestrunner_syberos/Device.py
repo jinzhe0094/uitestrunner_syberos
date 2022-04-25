@@ -41,6 +41,8 @@ import ocrCraftModel4uts
 import ocrLangModel4uts
 import shutil
 from pathlib import Path
+import requests
+import json
 
 
 def _watcher_process(main_pid, host, port, conn):
@@ -83,13 +85,14 @@ class Device(Events):
     Device初始化，获取设备初始信息，创建相关子线程与子进程等。\n
     :param host: 设备通信IP地址(默认为192.168.100.100)
     :param port: 设备通信端口(默认为10008，一般不需修改)
+    :param syslog_enable: 是否开启syslog(默认为关闭状态，不可中途修改)
     :param _main: 主进程标识符(禁止用户使用)
     :ivar xml_string: 储存最后一次的设备UI布局信息xml字符串
     :ivar default_timeout: 框架整体的默认超时时间
     :ivar control_host_type: 控制端平台类型，枚举类型Controller
     """
 
-    def __init__(self, host: str = None, port: int = None, _main: bool = True):
+    def __init__(self, host: str = None, port: int = None, syslog_enable: bool = False, _main: bool = True):
         super().__init__(d=self)
         warnings.simplefilter('ignore', ResourceWarning)
         self.xml_string = ""
@@ -122,6 +125,9 @@ class Device(Events):
             self.__host = host
         if port is not None:
             self.__port = port
+        self.__ocr_server = None
+        if self.has_environment("OCR_SERVER"):
+            self.__ocr_server = self.get_environment("OCR_SERVER")
         self.con = Connection(self.__host, self.__port, self)
         self.con.connect()
         self.__path = os.path.realpath(__file__).split(os.path.basename(__file__))[0]
@@ -134,23 +140,25 @@ class Device(Events):
                 if self.control_host_type != Controller.WINDOWS_AMD64:
                     _start_web_driver_daemon(self.__wb_process.pid)
                 _start_watcher(host, port, self.__watcher_conn)
-            syslog_thread = threading.Thread(target=self.__logger)
-            syslog_thread.daemon = True
-            syslog_thread.start()
-            if not Path(self.__ocr_mods).exists():
-                os.mkdir(self.__ocr_mods)
-            else:
-                if not Path(self.__ocr_mods).is_dir():
-                    os.remove(sys.path[0] + "/ocr_models")
+            if syslog_enable:
+                syslog_thread = threading.Thread(target=self.__logger)
+                syslog_thread.daemon = True
+                syslog_thread.start()
+            if self.__ocr_server:
+                if not Path(self.__ocr_mods).exists():
                     os.mkdir(self.__ocr_mods)
-            for mod in os.listdir(ocrCraftModel4uts.get_path()):
-                if not Path(ocrCraftModel4uts.get_path() + mod).is_dir():
-                    if not Path(self.__ocr_mods + mod).exists():
-                        shutil.copy(ocrCraftModel4uts.get_path() + mod, self.__ocr_mods)
-            for mod in os.listdir(ocrLangModel4uts.get_path()):
-                if not Path(ocrLangModel4uts.get_path() + mod).is_dir():
-                    if not Path(self.__ocr_mods + mod).exists():
-                        shutil.copy(ocrLangModel4uts.get_path() + mod, self.__ocr_mods)
+                else:
+                    if not Path(self.__ocr_mods).is_dir():
+                        os.remove(sys.path[0] + "/ocr_models")
+                        os.mkdir(self.__ocr_mods)
+                for mod in os.listdir(ocrCraftModel4uts.get_path()):
+                    if not Path(ocrCraftModel4uts.get_path() + mod).is_dir():
+                        if not Path(self.__ocr_mods + mod).exists():
+                            shutil.copy(ocrCraftModel4uts.get_path() + mod, self.__ocr_mods)
+                for mod in os.listdir(ocrLangModel4uts.get_path()):
+                    if not Path(ocrLangModel4uts.get_path() + mod).is_dir():
+                        if not Path(self.__ocr_mods + mod).exists():
+                            shutil.copy(ocrLangModel4uts.get_path() + mod, self.__ocr_mods)
         self.refresh_layout()
         if self.control_host_type != Controller.ANYWHERE:
             self.webdriver = webdriver.WebDriver(command_executor='http://127.0.0.1:8910/wd/hub')
@@ -487,16 +495,21 @@ class Device(Events):
         :return: TextItemFromOcr对象列表
         """
         image_base64 = item.grab_image_to_base64()
-        image = open(sys.path[0] + "/orc_temp_image.png", "wb")
-        imdata = base64.b64decode(image_base64)
-        image.write(imdata)
-        image.close()
-        reader = easyocr.Reader(['ch_sim', 'en'], gpu=False, model_storage_directory=self.__ocr_mods)
-        im = Image.open(io.BytesIO(imdata))
+        im = Image.open(io.BytesIO(base64.b64decode(image_base64)))
         width, height = im.size
         px = item.center_x_to_global() - (width / 2)
         py = item.center_y_to_global() - (height / 2)
-        text_item_info_list = reader.readtext(sys.path[0] + '/orc_temp_image.png')
+        if self.__ocr_server:
+            res = requests.post(url=self.__ocr_server, data=bytes("@$START$@" + image_base64 + "@$END$@", 'utf-8'))
+            text_item_info_list = json.loads(res.content)
+        else:
+            image_base64 = item.grab_image_to_base64()
+            image = open(sys.path[0] + "/orc_temp_image.png", "wb")
+            imdata = base64.b64decode(image_base64)
+            image.write(imdata)
+            image.close()
+            reader = easyocr.Reader(['ch_sim', 'en'], gpu=False, model_storage_directory=self.__ocr_mods)
+            text_item_info_list = reader.readtext(sys.path[0] + '/orc_temp_image.png')
         text_item_list = []
         for text_item_info in text_item_info_list:
             x = text_item_info[0][0][0]

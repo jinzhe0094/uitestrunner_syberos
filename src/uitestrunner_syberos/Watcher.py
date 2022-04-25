@@ -41,9 +41,11 @@ class WatchWorker:
         main_process = psutil.Process(self.main_pid)
         while True:
             time.sleep(1)
+            self.__get_list()
+            if len(self.__watcher_list) == 0:
+                continue
             main_process.suspend()
             try:
-                self.__get_list()
                 self.device.refresh_layout()
                 for watcher in self.__watcher_list:
                     if not watcher['is_run']:
