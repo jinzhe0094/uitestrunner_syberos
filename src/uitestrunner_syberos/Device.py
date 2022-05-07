@@ -144,7 +144,7 @@ class Device(Events):
                 syslog_thread = threading.Thread(target=self.__logger)
                 syslog_thread.daemon = True
                 syslog_thread.start()
-            if self.__ocr_server:
+            if not self.__ocr_server:
                 if not Path(self.__ocr_mods).exists():
                     os.mkdir(self.__ocr_mods)
                 else:

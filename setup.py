@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 setup(
     name='uitestrunner_syberos',
-    version='1.1.1',
+    version='1.1.2',
     author='Jinzhe Wang',
     description='A ui automated testing tool for SyberOS',
     author_email='wangjinzhe@syberos.com',
@@ -17,9 +17,7 @@ setup(
                 "uitestrunner_syberos.Connection",
                 "uitestrunner_syberos.Events",
                 "uitestrunner_syberos.Watcher",
-                "uitestrunner_syberos.setup",
                 "uitestrunner_syberos.__main__",
-                "uitestrunner_syberos.selenium_phantomjs",
                 "uitestrunner_syberos.DataStruct",
                 "uitestrunner_syberos.TextItemFromOcr"],
     package_data={
