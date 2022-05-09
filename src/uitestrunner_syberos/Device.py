@@ -503,7 +503,6 @@ class Device(Events):
             res = requests.post(url=self.__ocr_server, data=bytes("@$START$@" + image_base64 + "@$END$@", 'utf-8'))
             text_item_info_list = json.loads(res.content)
         else:
-            image_base64 = item.grab_image_to_base64()
             image = open(sys.path[0] + "/orc_temp_image.png", "wb")
             imdata = base64.b64decode(image_base64)
             image.write(imdata)

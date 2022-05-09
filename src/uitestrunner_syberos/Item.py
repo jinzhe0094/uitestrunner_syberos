@@ -983,7 +983,10 @@ class Item:
         :return: 对比值，值越小越相似
         """
         self.__refresh_node()
-        current_pic = Image.open(BytesIO(base64.b64decode(self.grab_image_to_base64())))
+        current_pic_base64 = self.grab_image_to_base64()
+        if current_pic_base64 == "":
+            return 999999.9
+        current_pic = Image.open(BytesIO(base64.b64decode(current_pic_base64)))
         target_pic = Image.open(path)
         h1 = current_pic.histogram()
         h2 = target_pic.histogram()
@@ -997,7 +1000,10 @@ class Item:
         :return: 对比值，值越小越相似
         """
         self.__refresh_node()
-        current_pic = Image.open(BytesIO(base64.b64decode(self.grab_image_to_base64())))
+        current_pic_base64 = self.grab_image_to_base64()
+        if current_pic_base64 == "" or pic == "":
+            return 999999.9
+        current_pic = Image.open(BytesIO(base64.b64decode(current_pic_base64)))
         target_pic = Image.open(BytesIO(base64.b64decode(pic)))
         h1 = current_pic.histogram()
         h2 = target_pic.histogram()
