@@ -793,3 +793,16 @@ class Events:
                                                                  "&password=" + password).read())
         self.unlock()
         return AuthenError(reply)
+
+    def get_system_stat(self) -> SystemStat:
+        """
+        获取设备负载及电源状态相关信息。\n
+        :return: SystemStat，系统状态数据对象
+        """
+        json_str = str(self.device.con.get(path="getSystemStat").read(), 'utf-8')
+        json_obj = json.loads(json_str)
+        stat = SystemStat(cpu_used_rate=float(json_obj["cpu_used_rate"]),
+                          mem_used_rate=float(json_obj["mem_used_rate"]),
+                          is_charging=bool(json_obj["is_charging"]),
+                          battery_level=int(json_obj["battery_level"]))
+        return stat

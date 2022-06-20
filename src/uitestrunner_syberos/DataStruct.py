@@ -267,3 +267,42 @@ class AuthenError(enum.Enum):
     AUTHEN_PARAMETER_INVALID = 9
     AUTHEN_LOCKOUT = 10
     AUTHEN_PASSWORD_EQUAL = 11
+
+
+class SystemStat:
+    """
+    系统状态信息类。\n
+    """
+    def __init__(self, cpu_used_rate: float, mem_used_rate: float, is_charging: bool, battery_level: int):
+        self._cpu_used_rate = cpu_used_rate
+        self._mem_used_rate = mem_used_rate
+        self._is_charging = is_charging
+        self._battery_level = battery_level
+
+    def cpu_used_rate(self) -> float:
+        """
+        获取CPU使用率百分比。\n
+        :return: 百分比浮点数
+        """
+        return self._cpu_used_rate
+
+    def mem_used_rate(self) -> float:
+        """
+        获取内存使用率百分比。\n
+        :return: 百分比浮点数
+        """
+        return self._mem_used_rate
+
+    def is_charging(self) -> bool:
+        """
+        获取设备充电状态。\n
+        :return: 正在充电返回true，否则返回false
+        """
+        return self._is_charging
+
+    def battery_level(self) -> int:
+        """
+        获取电池电量百分比。\n
+        :return: 百分比整数
+        """
+        return self._battery_level
