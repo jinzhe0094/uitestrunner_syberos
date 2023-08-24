@@ -976,10 +976,11 @@ class Item:
                                                 self.__attributes["width"], self.__attributes["height"],
                                                 self.__attributes["rotation"], self.__attributes["scale"])
 
-    def contrast_picture(self, path: str) -> float:
+    def contrast_picture(self, path: str, scale: bool = False) -> float:
         """
         使用本地的图片文件与当前元素控件截图进行图片比对。\n
         :param path: 本地的图片路径
+        :param scale: 对比之前是否通过缩放来统一二者尺寸，默认为否
         :return: 对比值，值越小越相似
         """
         self.__refresh_node()
@@ -988,6 +989,19 @@ class Item:
             return 999999.9
         current_pic = Image.open(BytesIO(base64.b64decode(current_pic_base64)))
         target_pic = Image.open(path)
+        if scale:
+            cw, ch = current_pic.size
+            tw, th = target_pic.size
+            if cw > tw:
+                nw = tw
+            else:
+                nw = cw
+            if ch > th:
+                nh = th
+            else:
+                nh = ch
+            current_pic.resize((nw, nh))
+            target_pic.resize((nw, nh))
         h1 = current_pic.histogram()
         h2 = target_pic.histogram()
         result = math.sqrt(reduce(operator.add, list(map(lambda a, b: (a - b) ** 2, h1, h2))) / len(h1))
