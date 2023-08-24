@@ -1000,8 +1000,8 @@ class Item:
                 nh = th
             else:
                 nh = ch
-            current_pic.resize((nw, nh))
-            target_pic.resize((nw, nh))
+            current_pic = current_pic.resize((nw, nh))
+            target_pic = target_pic.resize((nw, nh))
         h1 = current_pic.histogram()
         h2 = target_pic.histogram()
         result = math.sqrt(reduce(operator.add, list(map(lambda a, b: (a - b) ** 2, h1, h2))) / len(h1))
@@ -1031,8 +1031,8 @@ class Item:
                 nh = th
             else:
                 nh = ch
-            current_pic.resize((nw, nh))
-            target_pic.resize((nw, nh))
+            current_pic = current_pic.resize((nw, nh))
+            target_pic = target_pic.resize((nw, nh))
         h1 = current_pic.histogram()
         h2 = target_pic.histogram()
         result = math.sqrt(reduce(operator.add, list(map(lambda a, b: (a - b) ** 2, h1, h2))) / len(h1))
