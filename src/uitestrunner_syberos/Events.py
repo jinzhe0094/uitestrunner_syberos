@@ -87,7 +87,7 @@ class Events:
         :return: 成功返回True，否则为False
         """
         return self.__reply_status_check(self.device.con.get(path="setDisplayState", args="state=0")) and \
-               self.__reply_status_check(self.device.con.get(path="setDisplayState", args="state=2"))
+            self.__reply_status_check(self.device.con.get(path="setDisplayState", args="state=2"))
 
     def get_display_state(self) -> DisplayState:
         """
@@ -424,13 +424,18 @@ class Events:
         """
         return bool(int(str(self.device.con.get(path="mkdir", args="dirname=" + dir_path).read(), 'utf-8')))
 
-    def is_installed(self, sopid: str) -> bool:
+    def is_installed(self, sopid: str, syberdroid: bool = False) -> bool:
         """
         判断指定应用是否已安装。\n
         :param sopid: 指定应用的sopid
+        :param syberdroid: 是否为安卓兼容应用，默认为否
         :return: 已安装返回True，否则为False
         """
-        return bool(int(str(self.device.con.get(path="isAppInstalled", args="sopid=" + sopid).read(), 'utf-8')))
+        _fi = self.device.get_framework_info()
+        if syberdroid and (_fi == {} or not _fi['syberdroid']):
+            return False
+        return bool(int(str(self.device.con.get(path="isAppInstalled", args="sopid=" + sopid + "&androidapp="
+                                                                            + str(int(syberdroid))).read(), 'utf-8')))
 
     def is_uninstallable(self, sopid: str) -> bool:
         """
@@ -440,25 +445,35 @@ class Events:
         """
         return bool(int(str(self.device.con.get(path="isAppUninstallable", args="sopid=" + sopid).read(), 'utf-8')))
 
-    def install(self, file_path: str) -> bool:
+    def install(self, file_path: str, syberdroid: bool = False) -> bool:
         """
         安装应用。\n
-        :param file_path: 控制端.sop文件的路径
+        :param file_path: 控制端.sop(.apk)文件的路径
+        :param syberdroid: 是否为安卓兼容应用，默认为否
         :return: 成功返回True，否则为False
         """
+        _fi = self.device.get_framework_info()
+        if syberdroid and (_fi == {} or not _fi['syberdroid']):
+            return False
         if self.upload_file(file_path, "/tmp/"):
             file_name = file_path.split("/")[len(file_path.split("/")) - 1]
-            self.device.con.get(path="install", args="filepath=/tmp/" + file_name)
+            self.device.con.get(path="install", args="filepath=/tmp/" + file_name + "&androidapp="
+                                                     + str(int(syberdroid)))
             return True
         return False
 
-    def uninstall(self, sopid: str) -> bool:
+    def uninstall(self, sopid: str, syberdroid: bool = False) -> bool:
         """
         卸载应用。\n
         :param sopid: 要卸载的应用sopid
+        :param syberdroid: 是否为安卓兼容应用，默认为否
         :return: 成功返回True，否则为False
         """
-        return bool(int(str(self.device.con.get(path="uninstall", args="sopid=" + sopid).read(), 'utf-8')))
+        _fi = self.device.get_framework_info()
+        if syberdroid and (_fi == {} or not _fi['syberdroid']):
+            return False
+        return bool(int(str(self.device.con.get(path="uninstall", args="sopid=" + sopid + "&androidapp="
+                                                                       + str(int(syberdroid))).read(), 'utf-8')))
 
     def system_time(self) -> int:
         """
@@ -497,13 +512,18 @@ class Events:
         """
         return str(self.device.con.get(path="getLatestToast").read(), 'utf-8')
 
-    def clear_app_data(self, sopid: str) -> bool:
+    def clear_app_data(self, sopid: str, syberdroid: bool = False) -> bool:
         """
         清除应用数据。\n
         :param sopid: 应用sopid
+        :param syberdroid: 是否为安卓兼容应用，默认为否
         :return: 成功返回True，否则为False
         """
-        return self.__reply_status_check(self.device.con.get(path="clearAppData", args="sopid=" + sopid))
+        _fi = self.device.get_framework_info()
+        if syberdroid and (_fi == {} or not _fi['syberdroid']):
+            return False
+        return self.__reply_status_check(self.device.con.get(path="clearAppData", args="sopid=" + sopid + "&androidapp="
+                                                                                       + str(int(syberdroid))))
 
     def get_panel_state(self) -> bool:
         """
@@ -530,16 +550,21 @@ class Events:
             return self.__reply_status_check(self.device.con.get(path="setPanelState"))
         return True
 
-    def launch(self, sopid: str, uiappid: str, timeout: int = None) -> bool:
+    def launch(self, sopid: str, uiappid: str, timeout: int = None, syberdroid: bool = False) -> bool:
         """
         启动应用。\n
         :param sopid: 应用sopid
         :param uiappid: 应用uiappid
         :param timeout: 超时时间(单位:秒)，默认为框架超时时间
+        :param syberdroid: 是否为安卓兼容应用，默认为否
         :return: 成功返回True，否则为False
         """
+        _fi = self.device.get_framework_info()
+        if syberdroid and (_fi == {} or not _fi['syberdroid']):
+            return False
         self.device.refresh_layout()
-        self.device.con.get(path="launchApp", args="sopid=" + sopid + "&" + "uiappid=" + uiappid)
+        self.device.con.get(path="launchApp", args="sopid=" + sopid + "&uiappid=" + uiappid + "&androidapp="
+                                                   + str(int(syberdroid)))
         if timeout is None:
             timeout = self.device.default_timeout
         die_time = int(time.time()) + timeout
@@ -549,36 +574,61 @@ class Events:
                     self.device.refresh_layout()
                     selector = etree.XML(self.device.xml_string.encode('utf-8'))
                     if selector.get("sopId") == sopid:
-                        return True
+                        if not syberdroid or selector.get("androidApp") == "1":
+                            return True
                     break
                 except etree.XMLSyntaxError:
                     continue
-            self.device.con.get(path="launchApp", args="sopid=" + sopid + "&" + "uiappid=" + uiappid)
+            self.device.con.get(path="launchApp", args="sopid=" + sopid + "&uiappid=" + uiappid + "&androidapp="
+                                                       + str(int(syberdroid)))
             sleep(1)
         return False
 
-    def close(self, sopid: str, uiappid: str) -> bool:
+    def close(self, sopid: str, uiappid: str, syberdroid: bool = False) -> bool:
         """
         关闭应用。\n
         :param sopid: 应用sopid
         :param uiappid: 应用uiappid
+        :param syberdroid: 是否为安卓兼容应用，默认为否
         :return: 成功返回True，否则为False
         """
+        _fi = self.device.get_framework_info()
+        if syberdroid and (_fi == {} or not _fi['syberdroid']):
+            return False
         return self.__reply_status_check(
-            self.device.con.get(path="quitApp", args="sopid=" + sopid + "&uiappid=" + uiappid))
+            self.device.con.get(path="quitApp", args="sopid=" + sopid + "&uiappid=" + uiappid + "&androidapp="
+                                                     + str(int(syberdroid))))
 
-    def is_topmost(self, sopid: str) -> bool:
+    def app_is_running(self, sopid: str, syberdroid: bool = False) -> bool:
+        """
+        查询应用是否正在运行。\n
+        :param sopid: 应用sopid
+        :param syberdroid: 是否为安卓兼容应用，默认为否
+        :return: 应用正在运行返回True，否则为False
+        """
+        _fi = self.device.get_framework_info()
+        if syberdroid and (_fi == {} or not _fi['syberdroid']):
+            return False
+        return self.__reply_status_check(
+            self.device.con.get(path="appIsRunning", args="sopid=" + sopid + "&androidapp=" + str(int(syberdroid))))
+
+    def is_topmost(self, sopid: str, syberdroid: bool = False) -> bool:
         """
         判断指定应用是否显示在屏幕最上层。\n
         :param sopid: 指定应用的sopid
+        :param syberdroid: 是否为安卓兼容应用，默认为否
         :return: 在最上层返回True，否则为False
         """
+        _fi = self.device.get_framework_info()
+        if syberdroid and (_fi == {} or not _fi['syberdroid']):
+            return False
         for i in range(0, 10):
             try:
                 self.device.refresh_layout()
                 selector = etree.XML(self.device.xml_string.encode('utf-8'))
                 if selector.get("sopId") == sopid:
-                    return True
+                    if not syberdroid or selector.get("androidApp") == "1":
+                        return True
                 break
             except etree.XMLSyntaxError:
                 continue
