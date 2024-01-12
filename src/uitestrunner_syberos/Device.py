@@ -26,7 +26,7 @@ from subprocess import *
 from .selenium_phantomjs.webdriver.remote import webdriver
 from .Item import Item
 from .Connection import Connection
-from .Events import Events
+from .Events import *
 import configparser
 from multiprocessing import Process, Pipe
 from .Watcher import *
@@ -477,6 +477,24 @@ class Device(Events):
         :return: 序列号字符串
         """
         return self.__serial_number
+
+    def get_topmost_info(self) -> dict:
+        """
+        获取当前显示顶层的应用信息。\n
+        :return: 字典格式的应用信息
+        """
+        info = {'sopid': '', 'uiappid': '', 'syberdroid': False}
+        for i in range(0, 10):
+            try:
+                self.refresh_layout()
+                selector = etree.XML(self.xml_string.encode('utf-8'))
+                info['sopid'] = selector.get("sopId")
+                info['uiappid'] = selector.get("uiAppId")
+                info['syberdroid'] = selector.get("androidApp") == "1"
+                break
+            except etree.XMLSyntaxError:
+                continue
+        return info
 
     def find_item_by_xpath_key(self, sopid: str, xpath_key: str) -> Item:
         """

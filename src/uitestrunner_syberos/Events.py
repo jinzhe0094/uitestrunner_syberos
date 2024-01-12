@@ -619,20 +619,8 @@ class Events:
         :param syberdroid: 是否为安卓兼容应用，默认为否
         :return: 在最上层返回True，否则为False
         """
-        _fi = self.device.get_framework_info()
-        if syberdroid and (_fi == {} or not _fi['syberdroid']):
-            return False
-        for i in range(0, 10):
-            try:
-                self.device.refresh_layout()
-                selector = etree.XML(self.device.xml_string.encode('utf-8'))
-                if selector.get("sopId") == sopid:
-                    if not syberdroid or selector.get("androidApp") == "1":
-                        return True
-                break
-            except etree.XMLSyntaxError:
-                continue
-        return False
+        info = self.device.get_topmost_info()
+        return info['sopid'] == sopid and info['syberdroid'] == syberdroid
 
     def get_volume(self, role_type: AudioManagerRoleType) -> int:
         """
