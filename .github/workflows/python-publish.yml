@@ -59,6 +59,7 @@ jobs:
         pip install sphinx==4.4.0
         pip install sphinx-press-theme==0.8.0
         pip install pillow==10.0.0
+        pip install sympy==1.12
     - name: Update doc
       run: |
         setup_version=$(cat setup.py | grep version | cut -d "'" -f 2)
