@@ -63,6 +63,8 @@ jobs:
         setup_version=$(cat setup.py | grep version | cut -d "'" -f 2)
         cd docs/
         sphinx-build -M html -D release=${setup_version} -D copyright="2021-"$(date +%Y)", Jinzhe Wang" source/ build/
+        git config --global user.email "jinzhe0094@gmail.com"
+        git config --global user.name "jinzhe0094"
         git clone https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/jinzhe0094/uitestrunner-syberos-api-doc.git
         cp -rf build/* uitestrunner-syberos-api-doc/
         cd uitestrunner-syberos-api-doc/
