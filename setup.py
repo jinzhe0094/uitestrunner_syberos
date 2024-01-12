@@ -4,6 +4,8 @@ setup(
     version='2.0.2',
     author='Jinzhe Wang',
     description='A ui automated testing tool for SyberOS',
+    long_description=open('README.md', 'r').read(),
+    long_description_content_type='text/markdown',
     author_email='wangjinzhe@syberos.com',
     url='http://www.syberos.cn/',
     project_urls={
