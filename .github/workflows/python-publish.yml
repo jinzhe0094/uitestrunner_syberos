@@ -28,7 +28,8 @@ jobs:
       run: |
         echo "Working directory is now: $(pwd)"
         ls -al
-        jq
+        latest_version=$(curl -s https://pypi.org/pypi/uitestrunner-syberos/json | jq -r .info.version)
+        echo "${latest_version}"
         exit 1
     - name: Install dependencies
       run: |
