@@ -65,6 +65,7 @@ jobs:
         pip install sseclient==0.0.27
         pip install psutil==5.9.5
         pip install easyocr==1.7.0
+        pip install ocrLangModel4uts ocrCraftModel4uts
     - name: Update doc
       run: |
         setup_version=$(cat setup.py | grep version | cut -d "'" -f 2)
