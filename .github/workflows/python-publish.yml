@@ -61,6 +61,7 @@ jobs:
         pip install pillow==10.0.0
         pip install sympy==1.12
         pip install lxml==4.9.3
+        pip install opencv-python==4.8.0.76
     - name: Update doc
       run: |
         setup_version=$(cat setup.py | grep version | cut -d "'" -f 2)
