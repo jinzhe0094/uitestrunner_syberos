@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 setup(
     name='uitestrunner_syberos',
-    version='2.0.1',
+    version='2.0.2',
     author='Jinzhe Wang',
     description='A ui automated testing tool for SyberOS',
     author_email='wangjinzhe@syberos.com',
