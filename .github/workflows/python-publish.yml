@@ -62,6 +62,7 @@ jobs:
       run: |
         setup_version=$(cat setup.py | grep version | cut -d "'" -f 2)
         cd docs/
+        echo $(sphinx-build -h)
         sphinx-build -D release=${setup_version} -D copyright="2021-"$(date +%Y)", Jinzhe Wang" -M html source/ build/
         git clone https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/jinzhe0094/uitestrunner-syberos-api-doc.git
         cp -rf build/html/* uitestrunner-syberos-api-doc/
