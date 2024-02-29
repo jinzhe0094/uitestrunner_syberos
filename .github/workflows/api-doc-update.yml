@@ -1,0 +1,44 @@
+name: Api Doc Update
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  update:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.8'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install sphinx==4.4.0
+          pip install sphinx-press-theme==0.8.0
+          pip install pillow==10.0.0
+          pip install sympy==1.12
+          pip install lxml==4.9.3
+          pip install opencv-python==4.8.0.76
+          pip install sseclient==0.0.27
+          pip install psutil==5.9.5
+          pip install easyocr==1.7.0
+          pip install ocrLangModel4uts ocrCraftModel4uts
+      - name: Update doc
+        run: |
+          setup_version=$(cat setup.py | grep version | cut -d "'" -f2)
+          cd docs/
+          sphinx-build -M html -D release=${setup_version} -D copyright="2021-"$(date +%Y)", Jinzhe Wang" source/ build/
+          git config --global user.email "jinzhe0094@gmail.com"
+          git config --global user.name "jinzhe0094"
+          git clone https://${{secrets.PERSONAL_ACCESS_TOKEN}}@github.com/jinzhe0094/uitestrunner-syberos-api-doc.git
+          cp -rf build/* uitestrunner-syberos-api-doc/
+          cd uitestrunner-syberos-api-doc/
+          git add .
+          git commit -m "${setup_version}"
+          git push https://${{secrets.PERSONAL_ACCESS_TOKEN}}@github.com/jinzhe0094/uitestrunner-syberos-api-doc.git
