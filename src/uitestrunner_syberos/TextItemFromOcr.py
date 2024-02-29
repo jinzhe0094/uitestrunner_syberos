@@ -15,6 +15,25 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from .DataStruct import *
 from time import sleep
+import math
+
+
+def rotate_point_clockwise(point, center, angle):
+    # 计算向量AB
+    vector_ab = [point[0] - center[0], center[1] - point[1]]
+
+    # 将角度转换为弧度
+    angle_radians = math.radians(angle)
+
+    # 计算旋转后的向量坐标
+    x_prime = vector_ab[0] * math.cos(-angle_radians) - vector_ab[1] * math.sin(-angle_radians)
+    y_prime = vector_ab[0] * math.sin(-angle_radians) + vector_ab[1] * math.cos(-angle_radians)
+
+    # 计算旋转后的点B的坐标
+    b_x = center[0] + x_prime
+    b_y = center[1] - y_prime
+
+    return b_x, b_y
 
 
 class TextItemFromOcr:
@@ -22,14 +41,15 @@ class TextItemFromOcr:
     ocr识别到的文本元素类型。
     """
 
-    def __init__(self, x: int, y: int, w: int, h: int, text: str, d=None):
+    def __init__(self, x: int, y: int, w: int, h: int, r: int, text: str, d=None):
         self.device = d
         self.__x = x
         self.__y = y
         self.__w = w
         self.__h = h
-        self.__cx = x + int(w / 2)
-        self.__cy = y + int(h / 2)
+        self.__r = r
+        self.__cx, self.__cy = rotate_point_clockwise((x + int(w / 2), y + int(h / 2)),
+                                                      (x, y), r)
         self.__text = text
 
     def x(self) -> int:
