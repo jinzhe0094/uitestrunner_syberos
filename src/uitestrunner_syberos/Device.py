@@ -528,7 +528,7 @@ class Device(Events):
             pr = item.rotation()
         image_base64 = item.grab_image_to_base64()
         im = Image.open(io.BytesIO(base64.b64decode(image_base64)))
-        rotate_im = im.rotate(-pr, expand=True)
+        rotate_im = im.rotate(pr, expand=True)
         width, height = rotate_im.size
         buffered = io.BytesIO()
         rotate_im.save(buffered, format="PNG")
