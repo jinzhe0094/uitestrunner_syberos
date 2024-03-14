@@ -26,7 +26,7 @@ for mod in os.listdir(ocrLangModel4uts.get_path()):
 
 setup(
     name='uitestrunner_syberos',
-    version='2.1.4',
+    version='2.1.5',
     author='Jinzhe Wang',
     description='A ui automated testing tool for SyberOS',
     long_description=open('README.md', 'r').read(),
