@@ -6,12 +6,12 @@ import ocrCraftModel4uts
 import ocrLangModel4uts
 
 
-ocr_mods_path = os.path.dirname(os.path.abspath(__file__)) + "/ocr_models/"
+ocr_mods_path = os.path.dirname(os.path.abspath(__file__)) + "/uitestrunner_syberos/ocr_models/"
 if not Path(ocr_mods_path).exists():
     os.mkdir(ocr_mods_path)
 else:
     if not Path(ocr_mods_path).is_dir():
-        os.remove(os.path.dirname(os.path.abspath(__file__)) + "/ocr_models")
+        os.remove(os.path.dirname(os.path.abspath(__file__)) + "/uitestrunner_syberos/ocr_models")
         os.mkdir(ocr_mods_path)
 for mod in os.listdir(ocrCraftModel4uts.get_path()):
     if not Path(ocrCraftModel4uts.get_path() + mod).is_dir():
