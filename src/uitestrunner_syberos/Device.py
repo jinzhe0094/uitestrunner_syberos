@@ -32,15 +32,14 @@ from multiprocessing import Process, Pipe
 from .Watcher import *
 import psutil
 import warnings
-from .DataStruct import *
 from .TextItemFromOcr import *
 import easyocr
 from PIL import Image
 from typing import List
-import ocrCraftModel4uts
-import ocrLangModel4uts
-import shutil
-from pathlib import Path
+# import ocrCraftModel4uts
+# import ocrLangModel4uts
+# import shutil
+# from pathlib import Path
 import requests
 import json
 
@@ -110,7 +109,8 @@ class Device(Events):
         self.__width = 0
         self.__height = 0
         self.control_host_type = Controller.ANYWHERE
-        self.__ocr_mods = sys.path[0] + "/ocr_models/"
+        # self.__ocr_mods = sys.path[0] + "/ocr_models/"
+        self.__ocr_mods = os.path.dirname(os.path.abspath(__file__)) + "/ocr_models/"
         self.__host = "192.168.100.100"
         self.__port = 10008
         if self.has_environment("HOST"):
@@ -144,21 +144,21 @@ class Device(Events):
                 syslog_thread = threading.Thread(target=self.__logger)
                 syslog_thread.daemon = True
                 syslog_thread.start()
-            if not self.__ocr_server:
-                if not Path(self.__ocr_mods).exists():
-                    os.mkdir(self.__ocr_mods)
-                else:
-                    if not Path(self.__ocr_mods).is_dir():
-                        os.remove(sys.path[0] + "/ocr_models")
-                        os.mkdir(self.__ocr_mods)
-                for mod in os.listdir(ocrCraftModel4uts.get_path()):
-                    if not Path(ocrCraftModel4uts.get_path() + mod).is_dir():
-                        if not Path(self.__ocr_mods + mod).exists():
-                            shutil.copy(ocrCraftModel4uts.get_path() + mod, self.__ocr_mods)
-                for mod in os.listdir(ocrLangModel4uts.get_path()):
-                    if not Path(ocrLangModel4uts.get_path() + mod).is_dir():
-                        if not Path(self.__ocr_mods + mod).exists():
-                            shutil.copy(ocrLangModel4uts.get_path() + mod, self.__ocr_mods)
+            # if not self.__ocr_server:
+            #     if not Path(self.__ocr_mods).exists():
+            #         os.mkdir(self.__ocr_mods)
+            #     else:
+            #         if not Path(self.__ocr_mods).is_dir():
+            #             os.remove(sys.path[0] + "/ocr_models")
+            #             os.mkdir(self.__ocr_mods)
+            #     for mod in os.listdir(ocrCraftModel4uts.get_path()):
+            #         if not Path(ocrCraftModel4uts.get_path() + mod).is_dir():
+            #             if not Path(self.__ocr_mods + mod).exists():
+            #                 shutil.copy(ocrCraftModel4uts.get_path() + mod, self.__ocr_mods)
+            #     for mod in os.listdir(ocrLangModel4uts.get_path()):
+            #         if not Path(ocrLangModel4uts.get_path() + mod).is_dir():
+            #             if not Path(self.__ocr_mods + mod).exists():
+            #                 shutil.copy(ocrLangModel4uts.get_path() + mod, self.__ocr_mods)
         self.refresh_layout()
         if self.control_host_type != Controller.ANYWHERE:
             self.webdriver = webdriver.WebDriver(command_executor='http://127.0.0.1:8910/wd/hub')
