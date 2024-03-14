@@ -22,25 +22,3 @@ from .Watcher import *
 from .DataStruct import *
 from .selenium_phantomjs import *
 from .TextItemFromOcr import TextItemFromOcr
-import os
-import shutil
-from pathlib import Path
-import ocrCraftModel4uts
-import ocrLangModel4uts
-
-
-ocr_mods_path = os.path.dirname(os.path.abspath(__file__)) + "/ocr_models/"
-if not Path(ocr_mods_path).exists():
-    os.mkdir(ocr_mods_path)
-else:
-    if not Path(ocr_mods_path).is_dir():
-        os.remove(os.path.dirname(os.path.abspath(__file__)) + "/ocr_models")
-        os.mkdir(ocr_mods_path)
-for mod in os.listdir(ocrCraftModel4uts.get_path()):
-    if not Path(ocrCraftModel4uts.get_path() + mod).is_dir():
-        if not Path(ocr_mods_path + mod).exists():
-            shutil.copy(ocrCraftModel4uts.get_path() + mod, ocr_mods_path)
-for mod in os.listdir(ocrLangModel4uts.get_path()):
-    if not Path(ocrLangModel4uts.get_path() + mod).is_dir():
-        if not Path(ocr_mods_path + mod).exists():
-            shutil.copy(ocrLangModel4uts.get_path() + mod, ocr_mods_path)
