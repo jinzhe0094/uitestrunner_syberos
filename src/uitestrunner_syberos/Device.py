@@ -370,7 +370,7 @@ class Device(Events):
         获取设备内的测试框架信息。\n
         :return: 字典形式信息键值对，可能为空
         """
-        json_str = str(self.con.get(path="grabFrameworkInfo").read(), 'utf-8')
+        json_str = str(self.con.get(path="getFrameworkInfo").read(), 'utf-8')
         if json_str == "":
             return {}
         return json.loads(json_str)
