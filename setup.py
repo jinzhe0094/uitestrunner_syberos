@@ -1,11 +1,9 @@
-import setuptools
 from setuptools import setup, find_packages
 import os
 import shutil
 from pathlib import Path
 import ocrCraftModel4uts
 import ocrLangModel4uts
-
 
 ocr_mods_path = os.path.dirname(os.path.abspath(__file__)) + "/uitestrunner_syberos/ocr_models/"
 if not Path(ocr_mods_path).exists():
@@ -23,10 +21,9 @@ for mod in os.listdir(ocrLangModel4uts.get_path()):
         if not Path(ocr_mods_path + mod).exists():
             shutil.copy(ocrLangModel4uts.get_path() + mod, ocr_mods_path)
 
-
 setup(
     name='uitestrunner_syberos',
-    version='2.1.5',
+    version='2.1.4',
     author='Jinzhe Wang',
     description='A ui automated testing tool for SyberOS',
     long_description=open('README.md', 'r').read(),
@@ -71,6 +68,8 @@ setup(
                       "torchvision",
                       "ocrLangModel4uts",
                       "ocrCraftModel4uts"],
+    setup_requires=["ocrLangModel4uts",
+                    "ocrCraftModel4uts"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
