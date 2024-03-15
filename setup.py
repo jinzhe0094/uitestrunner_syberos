@@ -1,25 +1,5 @@
 from setuptools import setup, find_packages
-import os
-import shutil
-from pathlib import Path
-import ocrCraftModel4uts
-import ocrLangModel4uts
 
-ocr_mods_path = os.path.dirname(os.path.abspath(__file__)) + "/uitestrunner_syberos/ocr_models/"
-if not Path(ocr_mods_path).exists():
-    os.mkdir(ocr_mods_path)
-else:
-    if not Path(ocr_mods_path).is_dir():
-        os.remove(os.path.dirname(os.path.abspath(__file__)) + "/uitestrunner_syberos/ocr_models")
-        os.mkdir(ocr_mods_path)
-for mod in os.listdir(ocrCraftModel4uts.get_path()):
-    if not Path(ocrCraftModel4uts.get_path() + mod).is_dir():
-        if not Path(ocr_mods_path + mod).exists():
-            shutil.copy(ocrCraftModel4uts.get_path() + mod, ocr_mods_path)
-for mod in os.listdir(ocrLangModel4uts.get_path()):
-    if not Path(ocrLangModel4uts.get_path() + mod).is_dir():
-        if not Path(ocr_mods_path + mod).exists():
-            shutil.copy(ocrLangModel4uts.get_path() + mod, ocr_mods_path)
 
 setup(
     name='uitestrunner_syberos',
@@ -68,8 +48,6 @@ setup(
                       "torchvision",
                       "ocrLangModel4uts",
                       "ocrCraftModel4uts"],
-    setup_requires=["ocrLangModel4uts",
-                    "ocrCraftModel4uts"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",

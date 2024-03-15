@@ -36,10 +36,10 @@ from .TextItemFromOcr import *
 import easyocr
 from PIL import Image
 from typing import List
-# import ocrCraftModel4uts
-# import ocrLangModel4uts
-# import shutil
-# from pathlib import Path
+import ocrCraftModel4uts
+import ocrLangModel4uts
+import shutil
+from pathlib import Path
 import requests
 import json
 
@@ -79,6 +79,30 @@ def _start_web_driver_daemon(wb_pid):
         orphan_thread.start()
 
 
+def _init_ocr_models(p: str):
+    if not Path(p).exists():
+        os.mkdir(p)
+    else:
+        if not Path(p).is_dir():
+            os.remove(p[:-1])
+            os.mkdir(p)
+        else:
+            if Path(p + "finish").exists():
+                return
+            else:
+                shutil.rmtree(p, ignore_errors=True)
+                os.mkdir(p)
+    for mod in os.listdir(ocrCraftModel4uts.get_path()):
+        if not Path(ocrCraftModel4uts.get_path() + mod).is_dir():
+            if not Path(p + mod).exists():
+                shutil.copy(ocrCraftModel4uts.get_path() + mod, p)
+    for mod in os.listdir(ocrLangModel4uts.get_path()):
+        if not Path(ocrLangModel4uts.get_path() + mod).is_dir():
+            if not Path(p + mod).exists():
+                shutil.copy(ocrLangModel4uts.get_path() + mod, p)
+    Path(p + "finish").touch()
+
+
 class Device(Events):
     """
     Device初始化，获取设备初始信息，创建相关子线程与子进程等。\n
@@ -109,8 +133,7 @@ class Device(Events):
         self.__width = 0
         self.__height = 0
         self.control_host_type = Controller.ANYWHERE
-        # self.__ocr_mods = sys.path[0] + "/ocr_models/"
-        self.__ocr_mods = os.path.dirname(os.path.abspath(__file__)) + "/ocr_models/"
+        self.__ocr_mods = str(Path.home()) + "/.ocr_models/"
         self.__host = "192.168.100.100"
         self.__port = 10008
         if self.has_environment("HOST"):
@@ -144,21 +167,8 @@ class Device(Events):
                 syslog_thread = threading.Thread(target=self.__logger)
                 syslog_thread.daemon = True
                 syslog_thread.start()
-            # if not self.__ocr_server:
-            #     if not Path(self.__ocr_mods).exists():
-            #         os.mkdir(self.__ocr_mods)
-            #     else:
-            #         if not Path(self.__ocr_mods).is_dir():
-            #             os.remove(sys.path[0] + "/ocr_models")
-            #             os.mkdir(self.__ocr_mods)
-            #     for mod in os.listdir(ocrCraftModel4uts.get_path()):
-            #         if not Path(ocrCraftModel4uts.get_path() + mod).is_dir():
-            #             if not Path(self.__ocr_mods + mod).exists():
-            #                 shutil.copy(ocrCraftModel4uts.get_path() + mod, self.__ocr_mods)
-            #     for mod in os.listdir(ocrLangModel4uts.get_path()):
-            #         if not Path(ocrLangModel4uts.get_path() + mod).is_dir():
-            #             if not Path(self.__ocr_mods + mod).exists():
-            #                 shutil.copy(ocrLangModel4uts.get_path() + mod, self.__ocr_mods)
+            if not self.__ocr_server:
+                _init_ocr_models(self.__ocr_mods)
         self.refresh_layout()
         if self.control_host_type != Controller.ANYWHERE:
             self.webdriver = webdriver.WebDriver(command_executor='http://127.0.0.1:8910/wd/hub')
