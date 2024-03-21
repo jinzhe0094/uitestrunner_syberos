@@ -551,7 +551,7 @@ class Device(Events):
             imdata = base64.b64decode(base64_rotated_image)
             image.write(imdata)
             image.close()
-            reader = easyocr.Reader(['ch_sim', 'en'], gpu=False, model_storage_directory=self.__ocr_mods)
+            reader = easyocr.Reader(['ch_sim', 'en'], gpu=True, model_storage_directory=self.__ocr_mods)
             text_item_info_list = reader.readtext(sys.path[0] + '/orc_temp_image.png')
         text_item_list = []
         for text_item_info in text_item_info_list:
