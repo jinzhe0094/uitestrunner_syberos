@@ -235,6 +235,15 @@ class Events:
         """
         return self.__reply_status_check(self.device.con.get(path="sendPowerKeyEvent", args="delay=" + str(delay)))
 
+    def backspace(self, delay: int = 0) -> bool:
+        """
+        点击退格按键。\n
+        :param delay: 点击延时时间(单位:毫秒)，默认无延时
+        :return: 成功返回True，否则为False
+        """
+        return self.__reply_status_check(self.device.con.get(path="sendKeyEventWithUInput",
+                                                             args="value=14?delay=" + str(delay)))
+
     def back(self, delay: int = 0) -> bool:
         """
         点击设备返回按键。\n
