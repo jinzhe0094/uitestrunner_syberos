@@ -244,6 +244,106 @@ class Events:
         return self.__reply_status_check(self.device.con.get(path="sendKeyEventWithUInput",
                                                              args="value=14?delay=" + str(delay)))
 
+    def __key_with_control(self, value:  int) -> bool:
+        s1 = self.__reply_status_check(self.device.con.get(path="sendKeyEventPWithUInput", args="value=29?type=1"))
+        sleep(0.1)
+        s2 = self.__reply_status_check(self.device.con.get(path="sendKeyEventWithUInput", args="value=" + str(value)))
+        sleep(0.1)
+        s3 = self.__reply_status_check(self.device.con.get(path="sendKeyEventPWithUInput", args="value=29?type=0"))
+        return s1 and s2 and s3
+
+    def __key_with_shift(self, value:  int) -> bool:
+        s1 = self.__reply_status_check(self.device.con.get(path="sendKeyEventPWithUInput", args="value=42?type=1"))
+        sleep(0.1)
+        s2 = self.__reply_status_check(self.device.con.get(path="sendKeyEventWithUInput", args="value=" + str(value)))
+        sleep(0.1)
+        s3 = self.__reply_status_check(self.device.con.get(path="sendKeyEventPWithUInput", args="value=42?type=0"))
+        return s1 and s2 and s3
+
+    def select_all(self) -> bool:
+        """
+        全选，模拟键盘的Ctrl+A事件\n
+        :return: 成功返回True，否则为False
+        """
+        return self.__key_with_control(30)
+
+    def cut(self) -> bool:
+        """
+        剪切，模拟键盘的Ctrl+X事件\n
+        :return: 成功返回True，否则为False
+        """
+        return self.__key_with_control(45)
+
+    def copy(self) -> bool:
+        """
+        复制，模拟键盘的Ctrl+C事件\n
+        :return: 成功返回True，否则为False
+        """
+        return self.__key_with_control(46)
+
+    def paste(self) -> bool:
+        """
+        粘贴，模拟键盘的Ctrl+V事件\n
+        :return: 成功返回True，否则为False
+        """
+        return self.__key_with_control(47)
+
+    def up(self) -> bool:
+        """
+        方向键-上\n
+        :return: 成功返回True，否则为False
+        """
+        return self.__reply_status_check(self.device.con.get(path="sendKeyEventWithUInput", args="value=103"))
+
+    def down(self) -> bool:
+        """
+        方向键-下\n
+        :return: 成功返回True，否则为False
+        """
+        return self.__reply_status_check(self.device.con.get(path="sendKeyEventWithUInput", args="value=108"))
+
+    def left(self) -> bool:
+        """
+        方向键-左\n
+        :return: 成功返回True，否则为False
+        """
+        return self.__reply_status_check(self.device.con.get(path="sendKeyEventWithUInput", args="value=105"))
+
+    def right(self) -> bool:
+        """
+        方向键-右\n
+        :return: 成功返回True，否则为False
+        """
+        return self.__reply_status_check(self.device.con.get(path="sendKeyEventWithUInput", args="value=106"))
+
+    def shift_up(self) -> bool:
+        """
+        shift加方向键-上\n
+        :return: 成功返回True，否则为False
+        """
+        return self.__key_with_shift(103)
+
+    def shift_down(self) -> bool:
+        """
+        shift加方向键-下\n
+        :return: 成功返回True，否则为False
+        """
+        return self.__key_with_shift(108)
+
+    def shift_left(self) -> bool:
+        """
+        shift加方向键-左\n
+        :return: 成功返回True，否则为False
+        """
+        return self.__key_with_shift(105)
+
+    def shift_right(self) -> bool:
+        """
+        shift加方向键-右\n
+        :return: 成功返回True，否则为False
+        """
+        return self.__key_with_shift(106)
+
     def back(self, delay: int = 0) -> bool:
         """
         点击设备返回按键。\n
