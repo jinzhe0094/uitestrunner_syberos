@@ -295,6 +295,13 @@ class Events:
         """
         return self.__reply_status_check(self.device.con.get(path="sendKeyEventWithUInput", args="value=103"))
 
+    def enter(self) -> bool:
+        """
+        回车\n
+        :return: 成功返回True，否则为False
+        """
+        return self.__reply_status_check(self.device.con.get(path="sendKeyEventWithUInput", args="value=28"))
+
     def down(self) -> bool:
         """
         方向键-下\n
