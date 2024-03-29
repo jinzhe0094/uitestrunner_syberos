@@ -242,22 +242,22 @@ class Events:
         :return: 成功返回True，否则为False
         """
         return self.__reply_status_check(self.device.con.get(path="sendKeyEventWithUInput",
-                                                             args="value=14?delay=" + str(delay)))
+                                                             args="value=14&delay=" + str(delay)))
 
     def __key_with_control(self, value:  int) -> bool:
-        s1 = self.__reply_status_check(self.device.con.get(path="sendKeyEventPWithUInput", args="value=29?type=1"))
+        s1 = self.__reply_status_check(self.device.con.get(path="sendKeyEventPWithUInput", args="value=29&type=1"))
         sleep(0.1)
         s2 = self.__reply_status_check(self.device.con.get(path="sendKeyEventWithUInput", args="value=" + str(value)))
         sleep(0.1)
-        s3 = self.__reply_status_check(self.device.con.get(path="sendKeyEventPWithUInput", args="value=29?type=0"))
+        s3 = self.__reply_status_check(self.device.con.get(path="sendKeyEventPWithUInput", args="value=29&type=0"))
         return s1 and s2 and s3
 
     def __key_with_shift(self, value:  int) -> bool:
-        s1 = self.__reply_status_check(self.device.con.get(path="sendKeyEventPWithUInput", args="value=42?type=1"))
+        s1 = self.__reply_status_check(self.device.con.get(path="sendKeyEventPWithUInput", args="value=42&type=1"))
         sleep(0.1)
         s2 = self.__reply_status_check(self.device.con.get(path="sendKeyEventWithUInput", args="value=" + str(value)))
         sleep(0.1)
-        s3 = self.__reply_status_check(self.device.con.get(path="sendKeyEventPWithUInput", args="value=42?type=0"))
+        s3 = self.__reply_status_check(self.device.con.get(path="sendKeyEventPWithUInput", args="value=42&type=0"))
         return s1 and s2 and s3
 
     def select_all(self) -> bool:
