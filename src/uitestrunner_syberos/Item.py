@@ -258,7 +258,7 @@ class Item:
         if self.node.getparent() is None:
             return None
         pn = self.node.getprevious()
-        while previous_i:
+        while pn:
             if pn.tag == self.node.tag:
                 return Item(self.device, self.sopid, "", pn)
             pn = pn.getprevious()
@@ -620,7 +620,7 @@ class Item:
         scale = abs(float(node.getAttribute("scale")) * fs)
         height = round(float(node.getAttribute("height")) * scale)
         width = round(float(node.getAttribute("width")) * scale)
-        rotation = 0 - int(node.getAttribute("rotation"))
+        rotation = 0 - int(round(float(node.getAttribute("rotation"))))
         has_contents = bool(int(node.getAttribute("hasContents")))
         cx = round(float(node.getAttribute("centerXToGlobal")))
         cy = round(float(node.getAttribute("centerYToGlobal")))
