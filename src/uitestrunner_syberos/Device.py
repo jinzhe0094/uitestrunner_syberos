@@ -186,7 +186,7 @@ class Device(Events):
             self.control_host_type = Controller.DARWIN_X86_64
             self.__init_webdriver("darwin_x86_64_phantomjs", "libsimulation-rendering.dylib")
         elif p == "Darwin" and m == "arm64":
-            self.control_host_type = Controller.DARWIN_X86_64
+            self.control_host_type = Controller.DARWIN_ARM64
             self.__init_webdriver("darwin_x86_64_phantomjs", "libsimulation-rendering-arm64.dylib")
 
     def __init_webdriver(self, p_name, l_name):

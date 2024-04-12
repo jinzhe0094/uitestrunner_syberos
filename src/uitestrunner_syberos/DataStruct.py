@@ -121,6 +121,7 @@ class Controller(enum.Enum):
     WINDOWS_AMD64 = 1
     LINUX_X86_64 = 2
     DARWIN_X86_64 = 3
+    DARWIN_ARM64 = 4
 
 
 class WatcherActive(enum.Enum):
