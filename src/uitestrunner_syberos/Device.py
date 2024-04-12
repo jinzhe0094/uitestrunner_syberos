@@ -182,9 +182,12 @@ class Device(Events):
         elif p == "Linux" and m == "x86_64":
             self.control_host_type = Controller.LINUX_X86_64
             self.__init_webdriver("linux_x86_64_phantomjs", "libsimulation-rendering.so")
-        elif p == "Darwin":
+        elif p == "Darwin" and m == "x86_64":
             self.control_host_type = Controller.DARWIN_X86_64
             self.__init_webdriver("darwin_x86_64_phantomjs", "libsimulation-rendering.dylib")
+        elif p == "Darwin" and m == "arm64":
+            self.control_host_type = Controller.DARWIN_X86_64
+            self.__init_webdriver("darwin_x86_64_phantomjs", "libsimulation-rendering-arm64.dylib")
 
     def __init_webdriver(self, p_name, l_name):
         self.__wb_process = Popen([self.__path + "data/" + p_name,
