@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='uitestrunner_syberos',
-    version='2.2.7',
+    version='2.2.8',
     author='Jinzhe Wang',
     description='A ui automated testing tool for SyberOS',
     long_description=open('README.md', 'r').read(),
@@ -36,7 +36,7 @@ setup(
                       "PyNaCl",
                       "scp",
                       "lxml",
-                      "urllib3==1.26.18",
+                      "urllib3<=1.26.18",
                       "opencv-python",
                       "numpy",
                       "psutil",
