@@ -574,8 +574,8 @@ class Device(Events):
             vector_x = x - width / 2
             vector_y = y - height / 2
             rotate_vector_x, rotate_vector_y = rotate_point_clockwise((vector_x, vector_y), (0, 0), pr)
-            real_x = item.center_x_to_global() + rotate_vector_x
-            real_t = item.center_y_to_global() + rotate_vector_y
+            real_x = int(self.__width / 2) + rotate_vector_x
+            real_t = int(self.__height / 2) + rotate_vector_y
             text_item_list.append(TextItemFromOcr(real_x, real_t, w, h, pr, text, self))
         return text_item_list
 
