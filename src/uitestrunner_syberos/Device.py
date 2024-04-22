@@ -529,6 +529,56 @@ class Device(Events):
         i = Item(d=self, s=sopid, xpath=xpath)
         return i
 
+    def get_text_item_list_full_screen(self, rotation: int = None) -> List[TextItemFromOcr]:
+        """
+        全屏截图进行OCR图像识别获取文本元素实例化对象列表。\n
+        :param rotation: 元素的旋转角度，默认自动获取
+        :return: TextItemFromOcr对象列表
+        """
+        pr = rotation
+        if pr is None:
+            screen_orientation = self.get_screen_orientation()
+            if screen_orientation == ScreenOrientation.PRIMARY or screen_orientation == ScreenOrientation.PORTRAIT:
+                pr = 0
+            elif screen_orientation == ScreenOrientation.LANDSCAPE:
+                pr = 90
+            elif screen_orientation == ScreenOrientation.INVERTED_PORTRAIT:
+                pr = 180
+            else:
+                pr = 270
+        image_base64 = self.grab_image_to_base64(int(self.__width / 2), int(self.__height / 2), self.__width, self.__height)
+        im = Image.open(io.BytesIO(base64.b64decode(image_base64)))
+        rotate_im = im.rotate(pr, expand=True)
+        width, height = rotate_im.size
+        buffered = io.BytesIO()
+        rotate_im.save(buffered, format="PNG")
+        base64_rotated_image = base64.b64encode(buffered.getvalue()).decode()
+        if self.__ocr_server:
+            res = requests.post(url=self.__ocr_server,
+                                data=bytes("@$START$@" + base64_rotated_image + "@$END$@", 'utf-8'))
+            text_item_info_list = json.loads(res.content)
+        else:
+            image = open(sys.path[0] + "/orc_temp_image.png", "wb")
+            imdata = base64.b64decode(base64_rotated_image)
+            image.write(imdata)
+            image.close()
+            reader = easyocr.Reader(['ch_sim', 'en'], gpu=True, model_storage_directory=self.__ocr_mods)
+            text_item_info_list = reader.readtext(sys.path[0] + '/orc_temp_image.png')
+        text_item_list = []
+        for text_item_info in text_item_info_list:
+            x = text_item_info[0][0][0]
+            y = text_item_info[0][0][1]
+            w = text_item_info[0][2][0] - x
+            h = text_item_info[0][2][1] - y
+            text = text_item_info[1]
+            vector_x = x - width / 2
+            vector_y = y - height / 2
+            rotate_vector_x, rotate_vector_y = rotate_point_clockwise((vector_x, vector_y), (0, 0), pr)
+            real_x = item.center_x_to_global() + rotate_vector_x
+            real_t = item.center_y_to_global() + rotate_vector_y
+            text_item_list.append(TextItemFromOcr(real_x, real_t, w, h, pr, text, self))
+        return text_item_list
+
     def get_text_item_list(self, item: Item, rotation: int = None) -> List[TextItemFromOcr]:
         """
         根据元素控件的截图进行OCR图像识别获取文本元素实例化对象列表。\n
