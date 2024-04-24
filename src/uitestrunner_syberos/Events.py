@@ -730,6 +730,9 @@ class Events:
                     if selector.get("sopId") == sopid:
                         if not syberdroid or selector.get("androidApp") == "1":
                             return True
+                    else:
+                        if syberdroid and selector.get("androidApp") == "1" and selector.get("sopId") == "com.android.permissioncontroller":
+                            return True
                     break
                 except etree.XMLSyntaxError:
                     continue
