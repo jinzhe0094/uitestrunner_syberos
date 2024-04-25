@@ -359,19 +359,26 @@ class Events:
         """
         return self.__reply_status_check(self.device.con.get(path="sendBackKeyEvent", args="delay=" + str(delay)))
 
-    def home(self, delay: int = 0, timeout: int = None) -> bool:
+    def home(self, delay: int = 0) -> bool:
         """
         点击设备主屏幕按键。\n
         :param delay: 点击延时时间(单位:毫秒)，默认无延时
+        :return: 成功返回True，否则为False
+        """
+        return self.__reply_status_check(self.device.con.get(path="sendHomeKeyEvent", args="delay=" + str(delay)))
+
+    def go_home(self, timeout: int = None) -> bool:
+        """
+        去到桌面。\n
         :param timeout: 超时时间(单位:秒)，默认为框架超时时间
         :return: 成功返回True，否则为False
         """
-        if delay > 0:
-            return self.__reply_status_check(self.device.con.get(path="sendHomeKeyEvent", args="delay=" + str(delay)))
         if not timeout:
             timeout = self.device.default_timeout
         die_time = int(time.time()) + timeout
         while int(time.time()) < die_time:
+            self.device.set_display_on()
+            self.device.unlock()
             if self.__reply_status_check(self.device.con.get(path="sendHomeKeyEvent")):
                 for i in range(0, 10):
                     try:
