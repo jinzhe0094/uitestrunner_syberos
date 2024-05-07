@@ -759,9 +759,13 @@ class Events:
         _fi = self.device.get_framework_info()
         if syberdroid and (_fi == {} or not _fi['syberdroid']):
             return False
-        return self.__reply_status_check(
+        for i in range(0, 50):
             self.device.con.get(path="quitApp", args="sopid=" + sopid + "&uiappid=" + uiappid + "&androidapp="
-                                                     + str(int(syberdroid))))
+                                                     + str(int(syberdroid)))
+            sleep(0.01)
+            if not self.app_is_running(sopid, syberdroid):
+                return True
+        return not self.app_is_running(sopid, syberdroid)
 
     def app_is_running(self, sopid: str, syberdroid: bool = False) -> bool:
         """
