@@ -68,7 +68,7 @@ class WatchWorker:
                                 elif watcher['active'] == WatcherActive.STOP:
                                     self.device.close(watcher['active_sop_id'], watcher['active_ui_app_id'])
             except Exception as e:
-                print(e)
+                # print(e)
                 main_process.resume()
                 continue
             main_process.resume()

@@ -44,7 +44,7 @@ class Connection:
                 else:
                     print("设备连接失败！")
                 print("失败信息：" + str(e))
-                if i < 5:
+                if i < 3:
                     print("即将进行第" + str(i + 1) + "/3次重试，5秒后开始：")
                     for j in range(5):
                         print("......" + str(5 - j))
