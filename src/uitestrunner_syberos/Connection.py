@@ -30,7 +30,7 @@ class Connection:
         self.default_timeout = self.device.default_timeout
 
     def connect(self):
-        for i in range(4):
+        for i in range(11):
             try:
                 request = urllib.request.Request("http://" + self.host + ":" + str(self.port))
                 reply = urllib.request.urlopen(request, timeout=self.default_timeout)
@@ -44,8 +44,8 @@ class Connection:
                 else:
                     print("设备连接失败！")
                 print("失败信息：" + str(e))
-                if i < 3:
-                    print("即将进行第" + str(i + 1) + "/3次重试，5秒后开始：")
+                if i < 10:
+                    print("即将进行第" + str(i + 1) + "/10次重试，5秒后开始：")
                     for j in range(5):
                         print("......" + str(5 - j))
                         sleep(1)
@@ -62,7 +62,6 @@ class Connection:
                                              headers=headers, method="GET")
             reply = urllib.request.urlopen(request, timeout=timeout)
         except http.client.BadStatusLine:
-            print("BadStatusLine")
             request = urllib.request.Request(url="http://" + self.host + ":" + str(self.port) + "/" + path + "?" + args,
                                              headers=headers, method="GET")
             reply = urllib.request.urlopen(request, timeout=timeout)

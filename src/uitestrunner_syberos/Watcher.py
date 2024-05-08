@@ -41,11 +41,11 @@ class WatchWorker:
         main_process = psutil.Process(self.main_pid)
         while True:
             time.sleep(1)
-            self.__get_list()
-            if len(self.__watcher_list) == 0:
-                continue
-            main_process.suspend()
             try:
+                self.__get_list()
+                if len(self.__watcher_list) == 0:
+                    continue
+                main_process.suspend()
                 self.device.refresh_layout()
                 for watcher in self.__watcher_list:
                     if not watcher['is_run']:
@@ -68,7 +68,6 @@ class WatchWorker:
                                 elif watcher['active'] == WatcherActive.STOP:
                                     self.device.close(watcher['active_sop_id'], watcher['active_ui_app_id'])
             except Exception as e:
-                # print(e)
                 main_process.resume()
                 continue
             main_process.resume()
