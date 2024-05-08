@@ -16,6 +16,8 @@
 
 import http.client
 import urllib.request
+from time import sleep
+
 from sseclient import SSEClient
 
 
@@ -28,10 +30,26 @@ class Connection:
         self.default_timeout = self.device.default_timeout
 
     def connect(self):
-        request = urllib.request.Request("http://" + self.host + ":" + str(self.port))
-        reply = urllib.request.urlopen(request, timeout=self.default_timeout)
-        if reply.status == 200:
-            return True
+        for i in range(4):
+            try:
+                request = urllib.request.Request("http://" + self.host + ":" + str(self.port))
+                reply = urllib.request.urlopen(request, timeout=self.default_timeout)
+                if i > 0:
+                    print("重试成功。")
+                if reply.status == 200:
+                    return True
+            except http.client.HTTPException as e:
+                if i > 0:
+                    print("第" + str(i) + "次重试失败！")
+                else:
+                    print("设备连接失败！")
+                print("失败信息：" + str(e))
+                if i < 5:
+                    print("即将进行第" + str(i + 1) + "/3次重试，5秒后开始：")
+                    for j in range(5):
+                        print("......" + str(5 - j))
+                        sleep(1)
+                    print("开始重试。")
         return False
 
     def get(self, path, args="", headers=None, timeout=None):
