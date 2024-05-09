@@ -38,7 +38,7 @@ class Connection:
                     print("重试成功。")
                 if reply.status == 200:
                     return True
-            except http.client.HTTPException as e:
+            except Exception as e:
                 if i > 0:
                     print("第" + str(i) + "次重试失败！")
                 else:
