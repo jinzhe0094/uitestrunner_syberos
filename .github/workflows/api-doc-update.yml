@@ -42,3 +42,14 @@ jobs:
           git add .
           git commit -m "${setup_version}"
           git push https://${{secrets.PERSONAL_ACCESS_TOKEN}}@github.com/jinzhe0094/uitestrunner-syberos-api-doc.git
+      - uses: appleboy/scp-action@v0.1.7
+        with:
+          host: jinzhe.wang
+          username: root
+          password: ${{ secrets.JINZHE_WANG_ROOT_PWD }}
+          port: 22
+          source: '/home/runner/work/uitestrunner_syberos/uitestrunner_syberos/docs/build/*'
+          target: '/var/www/doc/uts'
+          strip_components: 4
+          rm: true
+      

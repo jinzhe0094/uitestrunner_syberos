@@ -632,7 +632,7 @@ class Events:
 
     def is_installed(self, sopid: str, syberdroid: bool = False) -> bool:
         """
-        判断指定应用是否已安装。\n
+        判断指定应用是否已经安装。\n
         :param sopid: 指定应用的sopid
         :param syberdroid: 是否为安卓兼容应用，默认为否
         :return: 已安装返回True，否则为False
