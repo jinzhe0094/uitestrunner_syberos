@@ -50,7 +50,7 @@ jobs:
           password: ${{ secrets.JINZHE_WANG_ROOT_PWD }}
           port: 22
           source: '/home/runner/work/uitestrunner_syberos/uitestrunner_syberos/docs/build/*'
-          target: '/var/www/uts-doc'
+          target: '/var/www/doc/uts'
           strip_components: 4
           rm: true
       
