@@ -34,7 +34,6 @@ jobs:
         run: |
           setup_version=$(cat setup.py | grep version | cut -d "'" -f2)
           cd docs/
-          sphinx-quickstart
           sphinx-build -M html -D release=${setup_version} -D copyright="2021-"$(date +%Y)", Jinzhe Wang" source/ build/
           git config --global user.email "jinzhe0094@gmail.com"
           git config --global user.name "jinzhe0094"
