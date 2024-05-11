@@ -51,4 +51,6 @@ jobs:
           port: 22
           source: '/home/runner/work/uitestrunner_syberos/uitestrunner_syberos/docs/build/*'
           target: '/var/www/uts-doc'
+          strip_components: 7
+          rm: true
       
