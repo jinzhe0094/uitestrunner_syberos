@@ -36,6 +36,7 @@ jobs:
           cd docs/
           sphinx-build -M html -D release=${setup_version} -D copyright="2021-"$(date +%Y)", Jinzhe Wang" source/ build/
           echo ${{secrets.JINZHE_WANG_ROOT_PWD}}
+          echo ${{secrets.PERSONAL_ACCESS_TOKEN}}
           sshpass -h
           scp -h
           sshpass -p ${{secrets.JINZHE_WANG_ROOT_PWD}} scp -o StrictHostKeyChecking=no -r build/* root@jinzhe.wang:/var/www/uts-doc/
