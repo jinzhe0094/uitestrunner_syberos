@@ -33,7 +33,8 @@ add_module_names = False
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc'
+    'sphinx.ext.autodoc',
+    'sphinx.ext.autosectionlabel'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -71,7 +72,6 @@ html_theme = 'press'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
-extensions = ['sphinx.ext.autosectionlabel'] 
 autosectionlabel_prefix_document = True 
 html_search_language = 'zh' 
 html_search_options = { 
