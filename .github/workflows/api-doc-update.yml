@@ -34,6 +34,13 @@ jobs:
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Add SSH key to ssh-agent
+        run: |
+          mkdir -p ~/.ssh/known_hosts
+          echo "${{ secrets.KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          ssh-add -k ~/.ssh/my_private_key
       - name: Update doc
         run: |
           setup_version=$(cat setup.py | grep version | cut -d "'" -f2)
