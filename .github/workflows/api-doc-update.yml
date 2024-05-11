@@ -36,7 +36,7 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
       - name: Add SSH key to ssh-agent
         run: |
-          mkdir -p ~/.ssh/known_hosts
+          mkdir -p ~/.ssh
           echo "${{ secrets.KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
           ssh-keyscan github.com >> ~/.ssh/known_hosts
