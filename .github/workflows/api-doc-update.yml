@@ -35,7 +35,8 @@ jobs:
           setup_version=$(cat setup.py | grep version | cut -d "'" -f2)
           cd docs/
           sphinx-build -M html -D release=${setup_version} -D copyright="2021-"$(date +%Y)", Jinzhe Wang" source/ build/
-          sshpass -p ${{secrets.JINZHE_WANG_ROOT_PWD}} scp -o StrictHostKeyChecking=no -rf build/* root@jinzhe.wang:/var/www/uts-doc/
+          ssh-keygen -R jinzhe.wang
+          sshpass -p ${{secrets.JINZHE_WANG_ROOT_PWD}} scp -o StrictHostKeyChecking=no -r build/* root@jinzhe.wang:/var/www/uts-doc/ 2&>1
           git config --global user.email "jinzhe0094@gmail.com"
           git config --global user.name "jinzhe0094"
           git clone https://${{secrets.PERSONAL_ACCESS_TOKEN}}@github.com/jinzhe0094/uitestrunner-syberos-api-doc.git
