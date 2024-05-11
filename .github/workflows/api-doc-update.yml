@@ -18,7 +18,7 @@ jobs:
           python-version: '3.8'
       - name: Install dependencies
         run: |
-          sudo apt update && sudo apt install -y sshpass
+          sudo apt update && sudo apt install -y openssh-client
           python -m pip install --upgrade pip
           pip install sphinx==4.4.0
           pip install sphinx-press-theme==0.8.0
@@ -31,7 +31,7 @@ jobs:
           pip install easyocr==1.7.0
           pip install ocrLangModel4uts ocrCraftModel4uts
       - name: Set up SSH keys
-        uses: webfactory/ssh-agent@v0.5.3
+        uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
       - name: Update doc
