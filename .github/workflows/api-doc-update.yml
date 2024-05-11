@@ -29,6 +29,7 @@ jobs:
           pip install psutil==5.9.5
           pip install easyocr==1.7.0
           pip install ocrLangModel4uts ocrCraftModel4uts
+          apt install sshpass
       - name: Update doc
         run: |
           setup_version=$(cat setup.py | grep version | cut -d "'" -f2)
