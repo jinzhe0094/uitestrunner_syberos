@@ -39,14 +39,12 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-          ssh-add -k ~/.ssh/my_private_key
       - name: Update doc
         run: |
           setup_version=$(cat setup.py | grep version | cut -d "'" -f2)
           cd docs/
           sphinx-build -M html -D release=${setup_version} -D copyright="2021-"$(date +%Y)", Jinzhe Wang" source/ build/
-          scp -o StrictHostKeyChecking=no -r build/* root@jinzhe.wang:/var/www/uts-doc/
+          scp -o StrictHostKeyChecking=no -rf build/* root@jinzhe.wang:/var/www/uts-doc/
           git config --global user.email "jinzhe0094@gmail.com"
           git config --global user.name "jinzhe0094"
           git clone https://${{secrets.PERSONAL_ACCESS_TOKEN}}@github.com/jinzhe0094/uitestrunner-syberos-api-doc.git
