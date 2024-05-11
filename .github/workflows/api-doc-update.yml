@@ -18,7 +18,6 @@ jobs:
           python-version: '3.8'
       - name: Install dependencies
         run: |
-          sudo apt update && sudo apt install -y openssh-client
           python -m pip install --upgrade pip
           pip install sphinx==4.4.0
           pip install sphinx-press-theme==0.8.0
@@ -30,20 +29,12 @@ jobs:
           pip install psutil==5.9.5
           pip install easyocr==1.7.0
           pip install ocrLangModel4uts ocrCraftModel4uts
-      - name: Set up SSH keys
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-      - name: Add SSH key to ssh-agent
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.KNOWN_HOSTS }}" > ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/known_hosts
       - name: Update doc
         run: |
           setup_version=$(cat setup.py | grep version | cut -d "'" -f2)
           cd docs/
           sphinx-build -M html -D release=${setup_version} -D copyright="2021-"$(date +%Y)", Jinzhe Wang" source/ build/
+          pwd
           scp -o StrictHostKeyChecking=no -rf build/* root@jinzhe.wang:/var/www/uts-doc/
           git config --global user.email "jinzhe0094@gmail.com"
           git config --global user.name "jinzhe0094"
