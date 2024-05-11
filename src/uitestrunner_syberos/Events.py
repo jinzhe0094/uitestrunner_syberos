@@ -174,10 +174,46 @@ class Events:
                                                                                          + "->" + str(p2.x)
                                                                                          + "|" + str(p2.y)))
 
-    def route_swipe(self, pl: List[Point]) -> bool:
+    def drag(self, p1: Point, p2: Point, delay: int = 1) -> bool:
+        """
+        拖动。\n
+        :param p1: 坐标点类Point对象，起始点
+        :param p2: 坐标点类Point对象，终点
+        :param delay: 起始点长按时间，默认1秒
+        :return: 成功返回True，否则为False
+        """
+        begin = self.__reply_status_check(
+            self.device.con.get(path="sendTouchEventPWithUInput",
+                                args="type=1&slot=9&id=9&x=" + str(p1.x) + "&y=" + str(p1.y)))
+        sleep(delay)
+        distance = math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2)
+        if distance > 30:
+            steps = 30
+        elif distance < 2:
+            steps = 2
+        else:
+            steps = distance
+        for j in range(steps):
+            if p1.x < p2.x:
+                tx = p1.x + ((p2.x - p1.x) / steps * j)
+            else:
+                tx = p1.x - ((p1.x - p2.x) / steps * j)
+            if p1.y < p2.y:
+                ty = p1.y + ((p2.y - p1.y) / steps * j)
+            else:
+                ty = p1.y - ((p1.y - p2.y) / steps * j)
+            self.device.con.get(path="sendTouchEventPWithUInput",
+                                args="type=2&slot=9&id=9&x=" + str(int(tx)) + "&y=" + str(int(ty)))
+        end = self.__reply_status_check(
+            self.device.con.get(path="sendTouchEventPWithUInput",
+                                args="type=0&slot=9&id=9&x=" + str(p2.x) + "&y=" + str(p2.y)))
+        return begin and end
+
+    def route_drag(self, pl: List[Point], delay: int = 1) -> bool:
         """
         沿路径滑动屏幕。\n
         :param pl: 坐标点类Point对象列表，起始点->途经点1->...途经点n->终止点，至少两个点
+        :param delay: 起始点长按时间，默认1秒
         :return: 成功返回True，否则为False
         """
         if len(pl) < 2:
@@ -185,6 +221,7 @@ class Events:
         begin = self.__reply_status_check(
             self.device.con.get(path="sendTouchEventPWithUInput",
                                 args="type=1&slot=9&id=9&x=" + str(pl[0].x) + "&y=" + str(pl[0].y)))
+        sleep(delay)
         for i in range(len(pl) - 1):
             p1 = pl[i]
             p2 = pl[i + 1]
@@ -210,6 +247,14 @@ class Events:
             self.device.con.get(path="sendTouchEventPWithUInput",
                                 args="type=0&slot=9&id=9&x=" + str(pl[len(pl) - 1].x) + "&y=" + str(pl[len(pl) - 1].y)))
         return begin and end
+
+    def route_swipe(self, pl: List[Point]) -> bool:
+        """
+        沿路径滑动屏幕。\n
+        :param pl: 坐标点类Point对象列表，起始点->途经点1->...途经点n->终止点，至少两个点
+        :return: 成功返回True，否则为False
+        """
+        return self.route_drag(pl, 0)
 
     def multi_swipe(self, points1: List[Point], points2: List[Point]) -> bool:
         """

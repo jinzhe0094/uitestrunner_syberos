@@ -957,6 +957,15 @@ class Item:
             return self.device.click(Point(self.rect[0][1]+1, self.rect[0][0]+1), delay)
         assert False
 
+    def drag(self, p: Point, delay: int = 1):
+        """
+        判断元素控件是否显示，显示则执行点击操作。\n
+        :param p: 坐标点类Point对象，目标点
+        :param delay: 起始点长按时间，默认1秒
+        :return: 成功返回True，否则为False
+        """
+        return self.device.drag(Point(self.x(), self.y()), p, delay)
+
     def submit_string(self, text: str) -> bool:
         """
         向元素控件提交文本(模拟输入法事件)。\n
