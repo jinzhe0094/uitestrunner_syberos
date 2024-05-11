@@ -12,6 +12,7 @@
 #
 import os
 import sys
+import jieba
 # import sphinx_pdj_theme
 sys.path.insert(0, os.path.abspath('../../src/'))
 
@@ -70,3 +71,9 @@ html_theme = 'press'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
+extensions = ['sphinx.ext.autosectionlabel'] 
+autosectionlabel_prefix_document = True 
+html_search_language = 'zh' 
+html_search_options = { 
+    'dict': os.path.join(os.path.dirname(os.path.realpath(__file__)), 'dict.txt')
+}
