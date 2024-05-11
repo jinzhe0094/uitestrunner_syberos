@@ -34,8 +34,6 @@ jobs:
           setup_version=$(cat setup.py | grep version | cut -d "'" -f2)
           cd docs/
           sphinx-build -M html -D release=${setup_version} -D copyright="2021-"$(date +%Y)", Jinzhe Wang" source/ build/
-          pwd
-          scp -o StrictHostKeyChecking=no -rf build/* root@jinzhe.wang:/var/www/uts-doc/
           git config --global user.email "jinzhe0094@gmail.com"
           git config --global user.name "jinzhe0094"
           git clone https://${{secrets.PERSONAL_ACCESS_TOKEN}}@github.com/jinzhe0094/uitestrunner-syberos-api-doc.git
@@ -44,3 +42,13 @@ jobs:
           git add .
           git commit -m "${setup_version}"
           git push https://${{secrets.PERSONAL_ACCESS_TOKEN}}@github.com/jinzhe0094/uitestrunner-syberos-api-doc.git
+          cd -
+      - uses: appleboy/scp-action@v0.1.7
+        with:
+          host: jinzhe.wang
+          username: root
+          password: ${{ secrets.JINZHE_WANG_ROOT_PWD }}
+          port: 22
+          source: 'build/*'
+          target: '/var/www/uts-doc'
+      
