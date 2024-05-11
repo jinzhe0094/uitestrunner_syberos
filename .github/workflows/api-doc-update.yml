@@ -20,7 +20,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install sphinx==4.4.0
-          pip install sphinx-autodoc
           pip install sphinx-press-theme==0.8.0
           pip install pillow==10.0.0
           pip install sympy==1.12
@@ -35,6 +34,7 @@ jobs:
         run: |
           setup_version=$(cat setup.py | grep version | cut -d "'" -f2)
           cd docs/
+          sphinx-quickstart
           sphinx-build -M html -D release=${setup_version} -D copyright="2021-"$(date +%Y)", Jinzhe Wang" source/ build/
           git config --global user.email "jinzhe0094@gmail.com"
           git config --global user.name "jinzhe0094"
