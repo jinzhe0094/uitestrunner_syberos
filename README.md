@@ -1,14 +1,7 @@
 # 元心智能移动操作系统UI自动化测试框架
-
----
-
 * 适用与SyberOS5.0及以上版本，包括5.5及以上的安卓兼容版本。
 * 推荐适用环境：python3.8+ubuntu1804/MacOS。python3版本过高或过低可能存在依赖安装失败的问题。
-
 ## 安装
-
----
-
 1.更新pip工具至最新版本：
 ```commandline
 python3.8 -m pip install --upgrade pip
@@ -18,11 +11,7 @@ python3.8 -m pip install --upgrade pip
 python3.8 -m pip install uitestrunner-syberos
 ```
 > 如果在中国大陆下载太慢的话可以换源，在命令后面添加参数`-i https://mirrors.aliyun.com/pypi/simple/`
-
 ## 快速开始
-
----
-
 1.准备设备。确保设备已经连接至电脑，并开启USB调试模式。通过ssh或adb/cdb等方式登录设备。执行命令以开启UI自动化测试服务guiautotestd：
 ```commandline
 guiautotest-ctl enable
