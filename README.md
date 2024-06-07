@@ -32,7 +32,7 @@ reboot
 > * 每台设备只需要执行一次即可。执行后设备会自动重启。
 
 2.连接及测试。SyberOS设备的USB端口一般默认为rndis模式，设备地址为`192.168.100.100`，guiautotestd服务端口为`10008`。通过浏览器访问`http://192.168.100.100:10008`，即可打开UIMonitor界面如下图：
-![图片访问失败](https://gitee.com/syberos/syberos-ui-automation-framework/raw/master/doc/images/uimonitor.png)
+![图片访问失败](https://github.com/jinzhe0094/uitestrunner_syberos/blob/890e740c4b1d0894f40d14f59e9e6b348cfebaec/docs/image/uimonitor.png?raw=true)
 > * UIMonitor工具用于以可视化的方式查看设备上的UI元素的布局信息，以及各个元素的详细属性信息和定位信息等。同时也支持一定的远程控制功能，如屏幕的点击、滑动等操作。
 > * 部分SyberOS的设备可能根据项目要求的不同而使用了其它USB端口模式，如adb、cdb等。如果是此种情况应通过adb/cdb工具的端口转发功能将guiautotestd的服务端口映射到本地。命令示例如下：
 >   ```commandline
