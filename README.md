@@ -28,7 +28,8 @@ python3.8 -m pip install uitestrunner-syberos
 guiautotest-ctl enable
 reboot
 ```
-> 每台设备只需要执行一次即可。执行后设备会自动重启。
+> * ssh用户名密码默认为`developer`，密码为`system`。
+> * 每台设备只需要执行一次即可。执行后设备会自动重启。
 
 2.连接及测试。SyberOS设备的USB端口一般默认为rndis模式，设备地址为`192.168.100.100`，guiautotestd服务端口为`10008`。通过浏览器访问`http://192.168.100.100:10008`，即可打开UIMonitor界面如下图：
 ![图片访问失败](https://gitee.com/syberos/syberos-ui-automation-framework/raw/master/doc/images/uimonitor.png)
@@ -37,6 +38,5 @@ reboot
 >   ```commandline
 >   adb forward tcp:10008 tcp:10008
 >   ```
-
 >   此时则改由通过`http://127.0.0.1:10008`访问UIMonitor。
  
