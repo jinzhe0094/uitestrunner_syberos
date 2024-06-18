@@ -677,3 +677,19 @@ class Device(Events):
             reply = urllib.request.urlopen(request, timeout=self.default_timeout)
             return reply.read().decode('utf-8') == "ok"
         return False
+
+    def get_latest_sms_from_support_device_inbox(self, support_number: str, self_number: str) -> str:
+        """
+        获取辅助机短信收件箱中最新一条本机发送的短信内容。\n
+        :param support_number: 获取到的辅助机号码
+        :param self_number: 本机号码
+        :return: 短信内容或空字符串
+        """
+        if self.__support_device_server:
+            headers = {'Accept': 'text/plain; charset=UTF-8'}
+            request = urllib.request.Request(url=self.__support_device_server + "/recvSms?support=" + support_number
+                                                 + "&test=" + self_number,
+                                             headers=headers, method="GET")
+            reply = urllib.request.urlopen(request, timeout=self.default_timeout)
+            return reply.read().decode('utf-8')
+        return ''
