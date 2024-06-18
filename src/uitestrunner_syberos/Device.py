@@ -644,5 +644,5 @@ class Device(Events):
             request = urllib.request.Request(url=self.__support_device_server + "/getSendSmsNumber",
                                              headers=headers, method="GET")
             reply = urllib.request.urlopen(request, timeout=self.default_timeout)
-            return reply.read()
+            return reply.read().decode('utf-8')
         return ''
