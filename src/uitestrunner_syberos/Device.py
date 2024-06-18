@@ -151,6 +151,9 @@ class Device(Events):
         self.__ocr_server = None
         if self.has_environment("OCR_SERVER"):
             self.__ocr_server = self.get_environment("OCR_SERVER")
+        self.__support_device_server = None
+        if self.has_environment("SUPPORT_DEVICE_SERVER"):
+            self.__support_device_server = self.get_environment("SUPPORT_DEVICE_SERVER")
         self.con = Connection(self.__host, self.__port, self)
         self.con.connect()
         self.__path = os.path.realpath(__file__).split(os.path.basename(__file__))[0]
@@ -630,3 +633,16 @@ class Device(Events):
             if not bool(int(self.get_environment("ROTATE_SCREEN"))):
                 return False
         return True
+
+    def get_support_device_number_for_sms_send(self) -> str:
+        """
+        获取可发送短信的辅助机电话号码。\n
+        :return: 电话号码字符串，如果无可用电话号码则返回空字符串
+        """
+        if self.__support_device_server:
+            headers = {'Accept': 'text/plain; charset=UTF-8'}
+            request = urllib.request.Request(url=self.__support_device_server + "/getSendSmsNumber",
+                                             headers=headers, method="GET")
+            reply = urllib.request.urlopen(request, timeout=self.default_timeout)
+            return reply.read()
+        return ''
