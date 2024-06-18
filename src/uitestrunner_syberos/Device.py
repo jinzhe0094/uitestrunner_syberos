@@ -42,6 +42,7 @@ import shutil
 from pathlib import Path
 import requests
 import json
+from urllib.parse import quote_plus
 
 
 def _watcher_process(main_pid, host, port, conn):
@@ -646,3 +647,33 @@ class Device(Events):
             reply = urllib.request.urlopen(request, timeout=self.default_timeout)
             return reply.read().decode('utf-8')
         return ''
+
+    def get_support_device_number_for_sms_recv(self) -> str:
+        """
+        获取可接收短信的辅助机电话号码。\n
+        :return: 电话号码字符串，如果无可用电话号码则返回空字符串
+        """
+        if self.__support_device_server:
+            headers = {'Accept': 'text/plain; charset=UTF-8'}
+            request = urllib.request.Request(url=self.__support_device_server + "/getRecvSmsNumber",
+                                             headers=headers, method="GET")
+            reply = urllib.request.urlopen(request, timeout=self.default_timeout)
+            return reply.read().decode('utf-8')
+        return ''
+
+    def send_sms_with_support_device(self, support_number: str, message: str, self_number: str) -> bool:
+        """
+        通过辅助机向本机发送短信。\n
+        :param support_number: 获取到的辅助机号码
+        :param message: 短信内容
+        :param self_number: 本机号码
+        :return: 成功返回True，否则返回False
+        """
+        if self.__support_device_server:
+            headers = {'Accept': 'text/plain; charset=UTF-8'}
+            request = urllib.request.Request(url=self.__support_device_server + "/sendSms?support=" + support_number
+                                                 + "&message=" + quote_plus(message) + "&test=" + self_number,
+                                             headers=headers, method="GET")
+            reply = urllib.request.urlopen(request, timeout=self.default_timeout)
+            return reply.read().decode('utf-8') == "ok"
+        return False
