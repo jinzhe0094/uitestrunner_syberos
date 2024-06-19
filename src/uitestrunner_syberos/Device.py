@@ -728,7 +728,7 @@ class Device(Events):
 
     def answer_voice_with_support_device(self, token: str, self_number: str, timeout: int = 60) -> bool:
         """
-        通过辅助机接听语音电话。注意：需要在调用此接口后并且在超时时间内向辅助机拨打电话\n
+        辅助机等待来电并接听。注意：需要在调用此接口后并且在超时时间内向辅助机拨打电话\n
         :param token: 获取到的辅助机验证token
         :param self_number: 本机号码
         :param timeout: 超时时间，默认60秒，超时后辅助机会自动结束等待或结束通话
@@ -752,6 +752,25 @@ class Device(Events):
         if self.__support_device_server:
             headers = {'Accept': 'text/plain; charset=UTF-8'}
             request = urllib.request.Request(url=self.__support_device_server + "/endCall?token=" + token,
+                                             headers=headers, method="GET")
+            reply = urllib.request.urlopen(request, timeout=self.default_timeout)
+            return reply.read().decode('utf-8') == 'true'
+        return False
+
+    def reject_with_support_device(self, token: str, self_number: str, wait_time: int = 0, timeout: int = 60) -> bool:
+        """
+        辅助机等待来电并拒接。注意：需要在调用此接口后并且在超时时间内向辅助机拨打电话\n
+        :param token: 获取到的辅助机验证token
+        :param self_number: 本机号码
+        :param wait_time: 振铃等待时间，默认0秒
+        :param timeout: 超时时间，默认60秒，超时后辅助机会自动结束等待
+        :return: 成功返回True，否则返回False
+        """
+        if self.__support_device_server:
+            headers = {'Accept': 'text/plain; charset=UTF-8'}
+            request = urllib.request.Request(url=self.__support_device_server + "/waitEndCall?token=" + token
+                                                 + "&test=" + self_number + "&wait_time=" + str(wait_time)
+                                                 + "&timeout=" + str(timeout),
                                              headers=headers, method="GET")
             reply = urllib.request.urlopen(request, timeout=self.default_timeout)
             return reply.read().decode('utf-8') == 'true'
