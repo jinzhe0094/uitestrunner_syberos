@@ -663,7 +663,7 @@ class Device(Events):
 
     def send_sms_with_support_device(self, support_number: str, message: str, self_number: str) -> bool:
         """
-        通过辅助机向本机发送短信。\n
+        通过辅助机向本机发送短信。注意：每台辅助机在发送短信后有10秒冷却时间。\n
         :param support_number: 获取到的辅助机号码
         :param message: 短信内容
         :param self_number: 本机号码
@@ -675,7 +675,7 @@ class Device(Events):
                                                  + "&message=" + quote_plus(message) + "&test=" + self_number,
                                              headers=headers, method="GET")
             reply = urllib.request.urlopen(request, timeout=self.default_timeout)
-            return reply.read().decode('utf-8') == "ok"
+            return reply.read().decode('utf-8') == "true"
         return False
 
     def get_latest_sms_from_support_device_inbox(self, support_number: str, self_number: str) -> str:
@@ -708,3 +708,20 @@ class Device(Events):
             if ',' in reply_str:
                 return reply_str.split(',')[0], reply_str.split(',')[1]
         return '', ''
+
+    def call_voice_with_support_device(self, token: str, self_number: str, timeout: int = 60) -> bool:
+        """
+        通过辅助机拨打语音电话。\n
+        :param token: 获取到的辅助机验证token
+        :param self_number: 本机号码
+        :param timeout: 超时时间，默认60秒，超时后辅助机会自动结束通话
+        :return: 成功返回True，否则返回False
+        """
+        if self.__support_device_server:
+            headers = {'Accept': 'text/plain; charset=UTF-8'}
+            request = urllib.request.Request(url=self.__support_device_server + "/call?token=" + token
+                                                 + "&test=" + self_number + "&timeout=" + str(timeout),
+                                             headers=headers, method="GET")
+            reply = urllib.request.urlopen(request, timeout=self.default_timeout)
+            return reply.read().decode('utf-8') == 'true'
+        return False
