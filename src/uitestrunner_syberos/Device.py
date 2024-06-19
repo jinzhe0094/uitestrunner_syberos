@@ -742,3 +742,17 @@ class Device(Events):
             reply = urllib.request.urlopen(request, timeout=self.default_timeout)
             return reply.read().decode('utf-8') == 'true'
         return False
+
+    def end_call_with_support_device(self, token: str) -> bool:
+        """
+        立即结束辅助机正在进行的语音电话。\n
+        :param token: 获取到的辅助机验证token
+        :return: 成功返回True，否则返回False
+        """
+        if self.__support_device_server:
+            headers = {'Accept': 'text/plain; charset=UTF-8'}
+            request = urllib.request.Request(url=self.__support_device_server + "/endCall?token=" + token,
+                                             headers=headers, method="GET")
+            reply = urllib.request.urlopen(request, timeout=self.default_timeout)
+            return reply.read().decode('utf-8') == 'true'
+        return False
