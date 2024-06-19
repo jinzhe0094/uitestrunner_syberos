@@ -757,7 +757,7 @@ class Device(Events):
             return reply.read().decode('utf-8') == 'true'
         return False
 
-    def reject_with_support_device(self, token: str, self_number: str, wait_time: int = 0, timeout: int = 60) -> bool:
+    def reject_voice_with_support_device(self, token: str, self_number: str, wait_time: int = 0, timeout: int = 60) -> bool:
         """
         辅助机等待来电并拒接。注意：需要在调用此接口后并且在超时时间内向辅助机拨打电话\n
         :param token: 获取到的辅助机验证token
