@@ -693,3 +693,18 @@ class Device(Events):
             reply = urllib.request.urlopen(request, timeout=self.default_timeout)
             return reply.read().decode('utf-8')
         return ''
+
+    def get_support_device_number_for_voice(self) -> (str, str):
+        """
+        获取可接打电话的辅助机电话号码。\n
+        :return: 电话号码字符串和token，如果无可用电话号码则返回两个空字符串，调用辅助机语音电话相关接口时需要携带token验证，token会在无操作30秒钟后失效
+        """
+        if self.__support_device_server:
+            headers = {'Accept': 'text/plain; charset=UTF-8'}
+            request = urllib.request.Request(url=self.__support_device_server + "/getPhoneNumber",
+                                             headers=headers, method="GET")
+            reply = urllib.request.urlopen(request, timeout=self.default_timeout)
+            reply_str = reply.read().decode('utf-8')
+            if ',' in reply_str:
+                return reply_str.split(',')[0], reply_str.split(',')[1]
+        return '', ''
