@@ -84,10 +84,12 @@ class LockState(enum.Enum):
 class DisplayState(enum.Enum):
     """
     显示器状态。\n
+    :ivar UNKNOWN: 未知状态
     :ivar ON: 亮屏
     :ivar OFF: 灭屏
     :ivar DIM: 暗屏
     """
+    UNKNOWN = -1
     ON = 0
     OFF = 1
     DIM = 2
