@@ -107,8 +107,8 @@ class ScreenOrientation(enum.Enum):
     PRIMARY = 0
     PORTRAIT = 1
     LANDSCAPE = 2
-    INVERTED_PORTRAIT = 3
-    INVERTED_LANDSCAPE = 4
+    INVERTED_PORTRAIT = 4
+    INVERTED_LANDSCAPE = 8
 
 
 class Controller(enum.Enum):
