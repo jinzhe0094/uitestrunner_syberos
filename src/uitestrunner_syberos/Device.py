@@ -45,6 +45,10 @@ import json
 from urllib.parse import quote_plus
 
 
+main_conn, watcher_conn = Pipe()
+watcher_process_list = []
+
+
 def _watcher_process(main_pid, host, port, conn):
     device = Device(host=host, port=port, _main=False)
     WatchWorker(device, conn, main_pid).run()
@@ -130,7 +134,6 @@ class Device(Events):
         self.__syslog_save_name = ""
         self.__syslog_save_keyword = ""
         self.watcher_list = []
-        self.__main_conn, self.__watcher_conn = Pipe()
         self.__width = 0
         self.__height = 0
         self.control_host_type = Controller.ANYWHERE
@@ -166,7 +169,9 @@ class Device(Events):
             if self.control_host_type != Controller.ANYWHERE:
                 if self.control_host_type != Controller.WINDOWS_AMD64:
                     _start_web_driver_daemon(self.__wb_process.pid)
-                _start_watcher(host, port, self.__watcher_conn)
+                if host + '_' + str(port) not in watcher_process_list:
+                    watcher_process_list.append(host + '_' + str(port))
+                    _start_watcher(host, port, watcher_conn)
             if syslog_enable:
                 syslog_thread = threading.Thread(target=self.__logger)
                 syslog_thread.daemon = True
@@ -204,7 +209,7 @@ class Device(Events):
         self.libsr.go.restype = ctypes.c_char_p
 
     def push_watcher_data(self):
-        self.__main_conn.send({'watcher_list': self.watcher_list})
+        main_conn.send({'watcher_list': self.watcher_list})
 
     def watcher(self, name: str) -> Watcher:
         """
@@ -224,7 +229,7 @@ class Device(Events):
         for watcher in self.watcher_list:
             if name == watcher['name']:
                 watcher['is_run'] = True
-        self.__main_conn.send({'watcher_list': self.watcher_list})
+        main_conn.send({'watcher_list': self.watcher_list})
 
     def pause_watcher(self, name: str) -> None:
         """
@@ -235,7 +240,7 @@ class Device(Events):
         for watcher in self.watcher_list:
             if name == watcher['name']:
                 watcher['is_run'] = False
-        self.__main_conn.send({'watcher_list': self.watcher_list})
+        main_conn.send({'watcher_list': self.watcher_list})
 
     def delete_watcher(self, name: str) -> None:
         """
@@ -246,7 +251,7 @@ class Device(Events):
         for watcher in self.watcher_list:
             if name == watcher['name']:
                 self.watcher_list.remove(watcher)
-        self.__main_conn.send({'watcher_list': self.watcher_list})
+        main_conn.send({'watcher_list': self.watcher_list})
 
     def __logger(self):
         syslog_save_path = ""
