@@ -169,8 +169,8 @@ class Device(Events):
             if self.control_host_type != Controller.ANYWHERE:
                 if self.control_host_type != Controller.WINDOWS_AMD64:
                     _start_web_driver_daemon(self.__wb_process.pid)
-                if host + '_' + str(port) not in watcher_process_list:
-                    watcher_process_list.append(host + '_' + str(port))
+                if self.__host + '_' + str(self.__port) not in watcher_process_list:
+                    watcher_process_list.append(self.__host + '_' + str(self.__port))
                     _start_watcher(host, port, watcher_conn)
             if syslog_enable:
                 syslog_thread = threading.Thread(target=self.__logger)
