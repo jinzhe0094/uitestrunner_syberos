@@ -512,7 +512,7 @@ class Events:
         if remote_path.split("/")[len(remote_path.split("/")) - 1] == "":
             remote_path += file_name
         _fi = self.device.get_framework_info()
-        if _fi != {} and _fi['version_build'] >= 20241010:
+        if _fi != {} and _fi['version_build'] >= 241010:
             header = {
                 "FilePath": remote_path,
                 "FileName": file_name,
@@ -522,13 +522,12 @@ class Events:
             with open(file_path, 'rb') as f:
                 while True:
                     header["Start"] = str(f.tell())
-                    chunk = f.read(8192)
-                    data = {'file': (file_name, chunk)}
+                    chunk = f.read(1024 * 1024)
                     if not chunk:
                         break
                     else:
                         re = re and bool(int(str(
-                            self.device.con.post(path="upLoadFile", headers=header, data=data, timeout=timeout).read(),
+                            self.device.con.post(path="upLoadFile", headers=header, data=chunk, timeout=timeout).read(),
                             'utf-8')))
             return re
         header = {
