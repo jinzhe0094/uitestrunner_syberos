@@ -523,7 +523,7 @@ class Events:
                 while True:
                     header["Start"] = str(f.tell())
                     chunk = f.read(8192)
-                    data = {'file': (file_name, f.read())}
+                    data = {'file': (file_name, chunk)}
                     if not chunk:
                         break
                     else:
