@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import math
+import os
 import urllib.parse
 from time import sleep
 from lxml import etree
@@ -510,14 +511,34 @@ class Events:
             raise Exception('error: the file path format is incorrect, and the transfer folder is not supported')
         if remote_path.split("/")[len(remote_path.split("/")) - 1] == "":
             remote_path += file_name
+        _fi = self.device.get_framework_info()
+        if _fi != {} and _fi['version_build'] >= 20241010:
+            header = {
+                "FilePath": remote_path,
+                "FileName": file_name,
+                "TotalSize": os.path.getsize(file_path)
+            }
+            re = True
+            with open(file_path, 'rb') as f:
+                while True:
+                    header["Start"] = str(f.tell())
+                    chunk = f.read(8192)
+                    data = {'file': (file_name, f.read())}
+                    if not chunk:
+                        break
+                    else:
+                        re = re and bool(int(str(
+                            self.device.con.post(path="upLoadFile", headers=header, data=data, timeout=timeout).read(),
+                            'utf-8')))
+            return re
         header = {
-            "content-type": "application/json",
             "FileName": remote_path
         }
         f = open(file_path, 'rb')
         data = {'file': (file_name, f.read())}
         f.close()
         encode_data = encode_multipart_formdata(data)
+
         data = encode_data[0]
         header['Content-Type'] = encode_data[1]
         return bool(int(str(
