@@ -18,6 +18,7 @@ import io
 import os
 import platform
 import re
+import socket
 import sys
 import threading
 import ctypes
@@ -47,6 +48,16 @@ from urllib.parse import quote_plus
 
 main_conn, watcher_conn = Pipe()
 watcher_process_list = []
+phantomjs_process_list = {}
+
+
+def get_free_port():
+    """
+    获取一个可用的空闲端口
+    """
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('', 0))
+        return s.getsockname()[1]
 
 
 def _watcher_process(main_pid, host, port, conn):
@@ -136,6 +147,7 @@ class Device(Events):
         self.watcher_list = []
         self.__width = 0
         self.__height = 0
+        self.__wh_key = ''
         self.control_host_type = Controller.ANYWHERE
         self.__ocr_mods = str(Path.home()) + "/.ocr_models/"
         self.__host = "192.168.100.100"
@@ -168,7 +180,7 @@ class Device(Events):
             self.__check_platform()
             if self.control_host_type != Controller.ANYWHERE:
                 if self.control_host_type != Controller.WINDOWS_AMD64:
-                    _start_web_driver_daemon(self.__wb_process.pid)
+                    _start_web_driver_daemon(phantomjs_process_list[self.__wh_key][0])
                 if self.__host + '_' + str(self.__port) not in watcher_process_list:
                     watcher_process_list.append(self.__host + '_' + str(self.__port))
                     _start_watcher(host, port, watcher_conn)
@@ -180,7 +192,9 @@ class Device(Events):
                 _init_ocr_models(self.__ocr_mods)
         self.refresh_layout()
         if self.control_host_type != Controller.ANYWHERE:
-            self.webdriver = webdriver.WebDriver(command_executor='http://127.0.0.1:8910/wd/hub')
+            self.webdriver = webdriver.WebDriver(command_executor='http://127.0.0.1:'
+                                                                  + str(phantomjs_process_list[self.__wh_key][1])
+                                                                  + '/wd/hub')
 
     def __check_platform(self):
         p = platform.system()
@@ -199,11 +213,14 @@ class Device(Events):
             self.__init_webdriver("darwin_x86_64_phantomjs", "libsimulation-rendering-arm64.dylib")
 
     def __init_webdriver(self, p_name, l_name):
-        self.__wb_process = Popen([self.__path + "data/" + p_name,
-                                   self.__path + "data/ghostdriver/main.js",
-                                   str(self.__width), str(self.__height)], stdout=PIPE, stderr=PIPE)
-        for i in range(2):
-            self.__wb_process.stdout.readline()
+        if self.__wh_key not in phantomjs_process_list.keys():
+            port = get_free_port()
+            wp = Popen([self.__path + "data/" + p_name, "--webdriver=127.0.0.1:" + str(port),
+                       self.__path + "data/ghostdriver/main.js",
+                       str(self.__width), str(self.__height)], stdout=PIPE, stderr=PIPE)
+            for i in range(2):
+                wp.stdout.readline()
+            phantomjs_process_list[self.__wh_key] = (wp.pid, port)
         ll = cdll.LoadLibrary
         self.libsr = ll(self.__path + "data/" + l_name)
         self.libsr.go.restype = ctypes.c_char_p
@@ -420,6 +437,7 @@ class Device(Events):
         image_data = str(self.con.get(path="getScreenShot").read(), 'utf-8')
         self.__height = int(image_data.split(",")[1])
         self.__width = int(image_data.split(",")[2])
+        self.__wh_key = str(self.__width) + "_" + str(self.__height)
 
     def display_width(self) -> int:
         """
