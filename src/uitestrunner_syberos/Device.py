@@ -218,8 +218,7 @@ class Device(Events):
             wp = Popen([self.__path + "data/" + p_name, "--webdriver=127.0.0.1:" + str(port),
                        self.__path + "data/ghostdriver/main.js",
                        str(self.__width), str(self.__height)], stdout=PIPE, stderr=PIPE)
-            for i in range(2):
-                wp.stdout.readline()
+            wp.stdout.readline()
             phantomjs_process_list[self.__wh_key] = (wp.pid, port)
         ll = cdll.LoadLibrary
         self.libsr = ll(self.__path + "data/" + l_name)
