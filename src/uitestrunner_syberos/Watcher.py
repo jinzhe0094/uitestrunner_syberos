@@ -60,9 +60,6 @@ class WatchWorker:
             for obj in self.__watcher_list_raw.keys():
                 for watcher in self.__watcher_list_raw[obj].values():
                     self.__watcher_list.append(watcher)
-                # self.__watcher_list_raw[data['object']]
-            # if 'watcher_list' in data.keys():
-            #     self.__watcher_list = data['watcher_list']
 
     def run(self):
         main_process = psutil.Process(self.main_pid)
@@ -196,6 +193,4 @@ class WatchContext:
         self.__push()
 
     def __push(self):
-        # self.__watcher_data['is_run'] = False
-        # self.device.watcher_list.append(self.__watcher_data)
         self.device.push_watcher(self.__watcher_name, self.__watcher_data)

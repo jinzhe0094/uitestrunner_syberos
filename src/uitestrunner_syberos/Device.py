@@ -65,8 +65,8 @@ def _watcher_process(main_pid, host, port, conn):
     WatchWorker(device, conn, main_pid).run()
 
 
-def _start_watcher(host, port, watcher_conn):
-    watcher_process = Process(target=_watcher_process, args=(os.getpid(), host, port, watcher_conn))
+def _start_watcher(host, port, w_conn):
+    watcher_process = Process(target=_watcher_process, args=(os.getpid(), host, port, w_conn))
     watcher_process.daemon = True
     watcher_process.start()
 
@@ -144,7 +144,6 @@ class Device(Events):
         self.__syslog_save_path = sys.path[0] + "/syslog/"
         self.__syslog_save_name = ""
         self.__syslog_save_keyword = ""
-        # self.watcher_list = []
         self.__width = 0
         self.__height = 0
         self.__wh_key = ''
@@ -231,7 +230,6 @@ class Device(Events):
             'watcher_name': name,
             'watcher_data': data
         })
-        # main_conn.send({'watcher_list': self.watcher_list})
 
     def __del__(self):
         main_conn.send({
@@ -260,10 +258,6 @@ class Device(Events):
             'object': str(id(self)),
             'watcher_name': name
         })
-        # for watcher in self.watcher_list:
-        #     if name == watcher['name']:
-        #         watcher['is_run'] = True
-        # main_conn.send({'watcher_list': self.watcher_list})
 
     def pause_watcher(self, name: str) -> None:
         """
@@ -276,10 +270,6 @@ class Device(Events):
             'object': str(id(self)),
             'watcher_name': name
         })
-        # for watcher in self.watcher_list:
-        #     if name == watcher['name']:
-        #         watcher['is_run'] = False
-        # main_conn.send({'watcher_list': self.watcher_list})
 
     def delete_watcher(self, name: str) -> None:
         """
@@ -292,10 +282,6 @@ class Device(Events):
             'object': str(id(self)),
             'watcher_name': name
         })
-        # for watcher in self.watcher_list:
-        #     if name == watcher['name']:
-        #         self.watcher_list.remove(watcher)
-        # main_conn.send({'watcher_list': self.watcher_list})
 
     def __logger(self):
         syslog_save_path = ""
