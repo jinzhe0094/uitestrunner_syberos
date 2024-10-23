@@ -30,12 +30,39 @@ class WatchWorker:
         self.conn = conn
         self.main_pid = main_pid
         self.__watcher_list = []
+        self.__watcher_list_raw = {}
 
     def __get_list(self):
         if self.conn.poll():
             data = dict(self.conn.recv())
-            if 'watcher_list' in data.keys():
-                self.__watcher_list = data['watcher_list']
+            if data['action'] == 'create':
+                if data['object'] not in self.__watcher_list_raw.keys():
+                    self.__watcher_list_raw[data['object']] = {}
+                self.__watcher_list_raw[data['object']][data['watcher_name']] = data['watcher_data']
+            elif data['action'] == 'start':
+                if data['object'] in self.__watcher_list_raw.keys():
+                    if data['watcher_name'] in self.__watcher_list_raw[data['object']].keys():
+                        if 'is_run' in self.__watcher_list_raw[data['object']][data['watcher_name']].keys():
+                            self.__watcher_list_raw[data['object']][data['watcher_name']]['is_run'] = True
+            elif data['action'] == 'pause':
+                if data['object'] in self.__watcher_list_raw.keys():
+                    if data['watcher_name'] in self.__watcher_list_raw[data['object']].keys():
+                        if 'is_run' in self.__watcher_list_raw[data['object']][data['watcher_name']].keys():
+                            self.__watcher_list_raw[data['object']][data['watcher_name']]['is_run'] = False
+            elif data['action'] == 'delete':
+                if data['object'] in self.__watcher_list_raw.keys():
+                    if data['watcher_name'] in self.__watcher_list_raw[data['object']].keys():
+                        del self.__watcher_list_raw[data['object']][data['watcher_name']]
+            elif data['action'] == 'clear':
+                if data['object'] in self.__watcher_list_raw.keys():
+                    del self.__watcher_list_raw[data['object']]
+            self.__watcher_list = []
+            for obj in self.__watcher_list_raw.keys():
+                for watcher in self.__watcher_list_raw[obj].values():
+                    self.__watcher_list.append(watcher)
+                # self.__watcher_list_raw[data['object']]
+            # if 'watcher_list' in data.keys():
+            #     self.__watcher_list = data['watcher_list']
 
     def run(self):
         main_process = psutil.Process(self.main_pid)
@@ -78,8 +105,9 @@ class Watcher:
     监视者类。
     """
 
-    def __init__(self, data: dict, d):
-        self.__watcher_data = data
+    def __init__(self, name: str, is_run: bool, d):
+        self.__watcher_data = {'is_run': is_run}
+        self.__watcher_name = name
         self.device = d
 
     def when(self, sop_id: str, xpath_key: str) -> WatchContext_T:
@@ -96,7 +124,7 @@ class Watcher:
                                                   'xpath': self.device.get_xpath(sop_id, xpath_key),
                                                   'sop_id': sop_id})
         self.__watcher_data['index'] = index
-        return WatchContext(self.__watcher_data, self.device)
+        return WatchContext(self.__watcher_name, self.__watcher_data, self.device)
 
 
 class WatchContext:
@@ -104,8 +132,9 @@ class WatchContext:
     监视者上下文类。
     """
 
-    def __init__(self, data: dict, d):
+    def __init__(self, name: str, data: dict, d):
         self.__watcher_data = data
+        self.__watcher_name = name
         self.device = d
 
     def when(self, sop_id: str, xpath_key: str) -> WatchContext_T:
@@ -167,6 +196,6 @@ class WatchContext:
         self.__push()
 
     def __push(self):
-        self.__watcher_data['is_run'] = False
-        self.device.watcher_list.append(self.__watcher_data)
-        self.device.push_watcher_data()
+        # self.__watcher_data['is_run'] = False
+        # self.device.watcher_list.append(self.__watcher_data)
+        self.device.push_watcher(self.__watcher_name, self.__watcher_data)

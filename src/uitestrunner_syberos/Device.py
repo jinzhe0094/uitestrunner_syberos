@@ -144,7 +144,7 @@ class Device(Events):
         self.__syslog_save_path = sys.path[0] + "/syslog/"
         self.__syslog_save_name = ""
         self.__syslog_save_keyword = ""
-        self.watcher_list = []
+        # self.watcher_list = []
         self.__width = 0
         self.__height = 0
         self.__wh_key = ''
@@ -224,16 +224,29 @@ class Device(Events):
         self.libsr = ll(self.__path + "data/" + l_name)
         self.libsr.go.restype = ctypes.c_char_p
 
-    def push_watcher_data(self):
-        main_conn.send({'watcher_list': self.watcher_list})
+    def push_watcher(self, name: str, data: dict):
+        main_conn.send({
+            'action': 'create',
+            'object': str(id(self)),
+            'watcher_name': name,
+            'watcher_data': data
+        })
+        # main_conn.send({'watcher_list': self.watcher_list})
 
-    def watcher(self, name: str) -> Watcher:
+    def __del__(self):
+        main_conn.send({
+            'action': 'clear',
+            'object': str(id(self))
+        })
+
+    def watcher(self, name: str, is_run: bool = False) -> Watcher:
         """
         创建一个待启动的监视者，可以根据指定条件作出相应反应。\n
         :param name: 标识名称，不可重复
+        :param is_run: 是否在创建时启动，默认为不启动
         :return: 返回一个实例化的Watcher对象
         """
-        w = Watcher({'name': name}, self)
+        w = Watcher(name, is_run, self)
         return w
 
     def start_watcher(self, name: str) -> None:
@@ -242,10 +255,15 @@ class Device(Events):
         :param name: 监视者标识名称
         :return: 无
         """
-        for watcher in self.watcher_list:
-            if name == watcher['name']:
-                watcher['is_run'] = True
-        main_conn.send({'watcher_list': self.watcher_list})
+        main_conn.send({
+            'action': 'start',
+            'object': str(id(self)),
+            'watcher_name': name
+        })
+        # for watcher in self.watcher_list:
+        #     if name == watcher['name']:
+        #         watcher['is_run'] = True
+        # main_conn.send({'watcher_list': self.watcher_list})
 
     def pause_watcher(self, name: str) -> None:
         """
@@ -253,10 +271,15 @@ class Device(Events):
         :param name: 监视者标识名称
         :return: 无
         """
-        for watcher in self.watcher_list:
-            if name == watcher['name']:
-                watcher['is_run'] = False
-        main_conn.send({'watcher_list': self.watcher_list})
+        main_conn.send({
+            'action': 'pause',
+            'object': str(id(self)),
+            'watcher_name': name
+        })
+        # for watcher in self.watcher_list:
+        #     if name == watcher['name']:
+        #         watcher['is_run'] = False
+        # main_conn.send({'watcher_list': self.watcher_list})
 
     def delete_watcher(self, name: str) -> None:
         """
@@ -264,10 +287,15 @@ class Device(Events):
         :param name: 监视者标识名称
         :return: 无
         """
-        for watcher in self.watcher_list:
-            if name == watcher['name']:
-                self.watcher_list.remove(watcher)
-        main_conn.send({'watcher_list': self.watcher_list})
+        main_conn.send({
+            'action': 'delete',
+            'object': str(id(self)),
+            'watcher_name': name
+        })
+        # for watcher in self.watcher_list:
+        #     if name == watcher['name']:
+        #         self.watcher_list.remove(watcher)
+        # main_conn.send({'watcher_list': self.watcher_list})
 
     def __logger(self):
         syslog_save_path = ""
