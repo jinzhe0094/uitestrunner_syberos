@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import base64
 import io
-import os
 import platform
 import re
 import socket
@@ -29,7 +28,7 @@ from .Item import Item
 from .Connection import Connection
 from .Events import *
 import configparser
-from multiprocessing import Process, Pipe
+from multiprocessing import Process, Pipe, Queue
 from .Watcher import *
 import psutil
 import warnings
@@ -47,8 +46,10 @@ from urllib.parse import quote_plus
 
 
 main_conn, watcher_conn = Pipe()
+watcher_xml_queue = Queue()
+watcher_xml_queue.cancel_join_thread()
 watcher_process_list = []
-phantomjs_process_list = {}
+phantomjs_port = 0
 
 
 def get_free_port():
@@ -60,13 +61,13 @@ def get_free_port():
         return s.getsockname()[1]
 
 
-def _watcher_process(main_pid, host, port, conn):
-    device = Device(host=host, port=port, _main=False)
+def _watcher_process(main_pid, host, port, conn, xml_queue, wd_port):
+    device = Device(host=host, port=port, _main=False, _xml_queue=xml_queue, _wd_port=wd_port)
     WatchWorker(device, conn, main_pid).run()
 
 
-def _start_watcher(host, port, w_conn):
-    watcher_process = Process(target=_watcher_process, args=(os.getpid(), host, port, w_conn))
+def _start_watcher(host, port, w_conn, w_xml_queue, wd_port):
+    watcher_process = Process(target=_watcher_process, args=(os.getpid(), host, port, w_conn, w_xml_queue, wd_port))
     watcher_process.daemon = True
     watcher_process.start()
 
@@ -130,10 +131,11 @@ class Device(Events):
     :ivar control_host_type: 控制端平台类型，枚举类型Controller
     """
 
-    def __init__(self, host: str = None, port: int = None, syslog_enable: bool = False, _main: bool = True):
+    def __init__(self, host: str = None, port: int = None, syslog_enable: bool = False, _main: bool = True, _xml_queue=None, _wd_port: int = 0):
         super().__init__(d=self)
         warnings.simplefilter('ignore', ResourceWarning)
         self.xml_string = ""
+        self.__xml_time = time.time()
         self.__xpath_file = sys.path[0] + "/xpath_list.ini"
         self.__environment_file = sys.path[0] + "/environment.ini"
         self.__screenshots = sys.path[0] + "/screenshots/"
@@ -143,13 +145,16 @@ class Device(Events):
         self.__syslog_save_path = sys.path[0] + "/syslog/"
         self.__syslog_save_name = ""
         self.__syslog_save_keyword = ""
+        self.__phantomjs_name = ""
+        self.__lib_name = ""
         self.__width = 0
         self.__height = 0
-        self.__wh_key = ''
         self.control_host_type = Controller.ANYWHERE
         self.__ocr_mods = str(Path.home()) + "/.ocr_models/"
         self.__host = "192.168.100.100"
         self.__port = 10008
+        if _xml_queue is not None:
+            self.__xml_queue = _xml_queue
         if self.has_environment("HOST"):
             self.__host = self.get_environment("HOST")
         if self.has_environment("PORT"):
@@ -174,51 +179,82 @@ class Device(Events):
         self.__serial_number = str(self.con.get(path="getSerialNumber").read(), 'utf-8')
         self.__os_version = str(self.con.get(path="getOsVersion").read(), 'utf-8')
         self.__set_display_size()
-        if _main:
-            self.__check_platform()
+        self.__main = _main
+        self.__wd_pid = 0
+        self.__wd_port = 0
+        self.__check_platform()
+        if self.__wd_port == 0:
+            self.__wd_port = _wd_port
+        if self.__main:
             if self.control_host_type != Controller.ANYWHERE:
                 if self.control_host_type != Controller.WINDOWS_AMD64:
-                    _start_web_driver_daemon(phantomjs_process_list[self.__wh_key][0])
+                    if self.__wd_pid != 0:
+                        _start_web_driver_daemon(self.__wd_pid)
                 if self.__host + '_' + str(self.__port) not in watcher_process_list:
                     watcher_process_list.append(self.__host + '_' + str(self.__port))
-                    _start_watcher(host, port, watcher_conn)
+                    _start_watcher(host, port, watcher_conn, watcher_xml_queue, self.__wd_port)
             if syslog_enable:
                 syslog_thread = threading.Thread(target=self.__logger)
                 syslog_thread.daemon = True
                 syslog_thread.start()
             if not self.__ocr_server:
                 _init_ocr_models(self.__ocr_mods)
-        self.refresh_layout()
         if self.control_host_type != Controller.ANYWHERE:
-            self.webdriver = webdriver.WebDriver(command_executor='http://127.0.0.1:'
-                                                                  + str(phantomjs_process_list[self.__wh_key][1])
-                                                                  + '/wd/hub')
+            self.webdriver = webdriver.WebDriver(command_executor='http://127.0.0.1:' + str(self.__wd_port) + '/wd/hub')
+        self.refresh_layout()
+
+    def __restart_phantomjs(self):
+        pp = psutil.Process(self.__wd_pid)
+        pp.kill()
+        global phantomjs_port
+        phantomjs_port = get_free_port()
+        self.__wd_port = phantomjs_port
+        wp = Popen([self.__path + "data/" + self.__phantomjs_name,
+                    "--webdriver=" + str(self.__wd_port)], stdout=PIPE, stderr=PIPE)
+        wp.stdout.readline()
+        self.__wd_pid = wp.pid
+        self.webdriver = webdriver.WebDriver(command_executor='http://127.0.0.1:' + str(self.__wd_port) + '/wd/hub')
+
+    def get_restart_phantomjs_timer(self) -> threading.Timer:
+        timer = threading.Timer(180, self.__restart_phantomjs)
+        return timer
 
     def __check_platform(self):
         p = platform.system()
         m = platform.machine()
         if p == "Windows" and m == "AMD64":
             self.control_host_type = Controller.WINDOWS_AMD64
-            self.__init_webdriver("win32_x86_64_phantomjs", "libsimulation-rendering.dll")
+            self.__phantomjs_name = "win32_x86_64_phantomjs"
+            self.__lib_name = "libsimulation-rendering.dll"
         elif p == "Linux" and m == "x86_64":
             self.control_host_type = Controller.LINUX_X86_64
-            self.__init_webdriver("linux_x86_64_phantomjs", "libsimulation-rendering.so")
+            self.__phantomjs_name = "linux_x86_64_phantomjs"
+            self.__lib_name = "libsimulation-rendering.so"
         elif p == "Darwin" and m == "x86_64":
             self.control_host_type = Controller.DARWIN_X86_64
-            self.__init_webdriver("darwin_x86_64_phantomjs", "libsimulation-rendering.dylib")
+            self.__phantomjs_name = "darwin_x86_64_phantomjs"
+            self.__lib_name = "libsimulation-rendering.dylib"
         elif p == "Darwin" and m == "arm64":
             self.control_host_type = Controller.DARWIN_ARM64
-            self.__init_webdriver("darwin_x86_64_phantomjs", "libsimulation-rendering-arm64.dylib")
+            self.__phantomjs_name = "darwin_x86_64_phantomjs"
+            self.__lib_name = "libsimulation-rendering-arm64.dylib"
+        self.__init_webdriver()
 
-    def __init_webdriver(self, p_name, l_name):
-        if self.__wh_key not in phantomjs_process_list.keys():
-            port = get_free_port()
-            wp = Popen([self.__path + "data/" + p_name, "--webdriver=" + str(port)], stdout=PIPE, stderr=PIPE)
-            wp.stdout.readline()
-            phantomjs_process_list[self.__wh_key] = (wp.pid, port)
-        ll = cdll.LoadLibrary
-        self.libsr = ll(self.__path + "data/" + l_name)
-        self.libsr.go.restype = ctypes.c_char_p
+    def __init_webdriver(self):
+        if self.__main:
+            global phantomjs_port
+            if phantomjs_port == 0:
+                phantomjs_port = get_free_port()
+                self.__wd_port = phantomjs_port
+                wp = Popen([self.__path + "data/" + self.__phantomjs_name,
+                            "--webdriver=" + str(self.__wd_port)], stdout=PIPE, stderr=PIPE)
+                wp.stdout.readline()
+                self.__wd_pid = wp.pid
+            else:
+                self.__wd_port = phantomjs_port
+            ll = cdll.LoadLibrary
+            self.libsr = ll(self.__path + "data/" + self.__lib_name)
+            self.libsr.go.restype = ctypes.c_char_p
 
     def push_watcher(self, name: str, data: dict):
         main_conn.send({
@@ -447,7 +483,6 @@ class Device(Events):
         image_data = str(self.con.get(path="getScreenShot").read(), 'utf-8')
         self.__height = int(image_data.split(",")[1])
         self.__width = int(image_data.split(",")[2])
-        self.__wh_key = str(self.__width) + "_" + str(self.__height)
 
     def display_width(self) -> int:
         """
@@ -512,7 +547,20 @@ class Device(Events):
         刷新当前设备的UI布局信息。\n
         :return: 无
         """
-        self.xml_string = str(self.con.get(path="getLayoutXML").read(), 'utf-8').replace('\x08', '')
+        if self.__main:
+            self.xml_string = str(self.con.get(path="getLayoutXML").read(), 'utf-8').replace('\x08', '')
+            self.__xml_time = time.time()
+            watcher_xml_queue.put({'xml': self.xml_string, 'time': self.__xml_time})
+        else:
+            data = {'xml': '', 'time': 0}
+            while not self.__xml_queue.empty():
+                data = self.__xml_queue.get()
+            if data['time'] > self.__xml_time:
+                self.xml_string = data['xml']
+                self.__xml_time = data['time']
+            else:
+                self.xml_string = str(self.con.get(path="getLayoutXML").read(), 'utf-8').replace('\x08', '')
+                self.__xml_time = time.time()
 
     def os_version(self) -> str:
         """

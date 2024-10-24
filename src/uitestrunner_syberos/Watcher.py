@@ -67,10 +67,9 @@ class WatchWorker:
             time.sleep(1)
             try:
                 self.__get_list()
+                self.device.refresh_layout()
                 if len(self.__watcher_list) == 0:
                     continue
-                main_process.suspend()
-                self.device.refresh_layout()
                 for watcher in self.__watcher_list:
                     if not watcher['is_run']:
                         continue
@@ -79,6 +78,7 @@ class WatchWorker:
                         if self.device.find_item_by_xpath(xpath['sop_id'], xpath['xpath']).exist(0):
                             flag += 1
                     if flag == len(watcher['xpath_list']):
+                        main_process.suspend()
                         for xpath in watcher['xpath_list']:
                             if xpath['index'] == watcher['index']:
                                 if watcher['active'] == WatcherActive.CLICK:
@@ -91,10 +91,10 @@ class WatchWorker:
                                     self.device.launch(watcher['active_sop_id'], watcher['active_ui_app_id'])
                                 elif watcher['active'] == WatcherActive.STOP:
                                     self.device.close(watcher['active_sop_id'], watcher['active_ui_app_id'])
+                        main_process.resume()
             except Exception as e:
                 main_process.resume()
                 continue
-            main_process.resume()
 
 
 class Watcher:
