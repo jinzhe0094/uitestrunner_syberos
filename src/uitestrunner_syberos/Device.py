@@ -91,8 +91,7 @@ def _create_orphan_thread(main_pid, wb_pid):
 def _start_web_driver_daemon(wb_pid):
     orphan_thread = Process(target=_create_orphan_thread, args=(os.getpid(), wb_pid))
     orphan_thread.daemon = False
-    if __name__ == '__main__':
-        orphan_thread.start()
+    orphan_thread.start()
 
 
 def _init_ocr_models(p: str):
@@ -214,9 +213,7 @@ class Device(Events):
     def __init_webdriver(self, p_name, l_name):
         if self.__wh_key not in phantomjs_process_list.keys():
             port = get_free_port()
-            wp = Popen([self.__path + "data/" + p_name, "--webdriver=127.0.0.1:" + str(port),
-                       self.__path + "data/ghostdriver/main.js",
-                       str(self.__width), str(self.__height)], stdout=PIPE, stderr=PIPE)
+            wp = Popen([self.__path + "data/" + p_name, "--webdriver=" + str(port)], stdout=PIPE, stderr=PIPE)
             wp.stdout.readline()
             phantomjs_process_list[self.__wh_key] = (wp.pid, port)
         ll = cdll.LoadLibrary

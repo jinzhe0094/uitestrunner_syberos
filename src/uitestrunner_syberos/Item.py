@@ -578,6 +578,7 @@ class Item:
                                           html_string_4)
                 image = cv2.imdecode(np.frombuffer(base64.b64decode(self.device.webdriver.get_screenshot_as_base64()),
                                                    np.uint8), cv2.COLOR_RGB2BGR)
+                image = image[0:self.__display_height, 0:self.__display_width]
             # win_name = str(self.device.system_time())
             # cv2.namedWindow(win_name, cv2.WINDOW_NORMAL)
             # cv2.imshow(win_name, image)
