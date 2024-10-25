@@ -23,7 +23,6 @@ import threading
 import ctypes
 from ctypes import *
 from subprocess import *
-from .selenium_phantomjs.webdriver.remote import webdriver
 from .Item import Item
 from .Connection import Connection
 from .Events import *
@@ -179,20 +178,20 @@ class Device(Events):
         self.__serial_number = str(self.con.get(path="getSerialNumber").read(), 'utf-8')
         self.__os_version = str(self.con.get(path="getOsVersion").read(), 'utf-8')
         self.__set_display_size()
-        self.__main = _main
+        self.is_main = _main
         self.__wd_pid = 0
-        self.__wd_port = 0
+        self.wd_port = 0
         self.__check_platform()
-        if self.__wd_port == 0:
-            self.__wd_port = _wd_port
-        if self.__main:
+        if self.wd_port == 0:
+            self.wd_port = _wd_port
+        if self.is_main:
             if self.control_host_type != Controller.ANYWHERE:
                 if self.control_host_type != Controller.WINDOWS_AMD64:
                     if self.__wd_pid != 0:
                         _start_web_driver_daemon(self.__wd_pid)
                 if self.__host + '_' + str(self.__port) not in watcher_process_list:
                     watcher_process_list.append(self.__host + '_' + str(self.__port))
-                    _start_watcher(host, port, watcher_conn, watcher_xml_queue, self.__wd_port)
+                    _start_watcher(host, port, watcher_conn, watcher_xml_queue, self.wd_port)
             if syslog_enable:
                 syslog_thread = threading.Thread(target=self.__logger)
                 syslog_thread.daemon = True
@@ -200,7 +199,7 @@ class Device(Events):
             if not self.__ocr_server:
                 _init_ocr_models(self.__ocr_mods)
         if self.control_host_type != Controller.ANYWHERE:
-            self.webdriver = webdriver.WebDriver(command_executor='http://127.0.0.1:' + str(self.__wd_port) + '/wd/hub')
+            self.webdriver = webdriver.WebDriver(command_executor='http://127.0.0.1:' + str(self.wd_port) + '/wd/hub')
         self.refresh_layout()
 
     def __restart_phantomjs(self):
@@ -208,12 +207,16 @@ class Device(Events):
         pp.kill()
         global phantomjs_port
         phantomjs_port = get_free_port()
-        self.__wd_port = phantomjs_port
+        self.wd_port = phantomjs_port
         wp = Popen([self.__path + "data/" + self.__phantomjs_name,
-                    "--webdriver=" + str(self.__wd_port)], stdout=PIPE, stderr=PIPE)
+                    "--webdriver=" + str(self.wd_port)], stdout=PIPE, stderr=PIPE)
         wp.stdout.readline()
         self.__wd_pid = wp.pid
-        self.webdriver = webdriver.WebDriver(command_executor='http://127.0.0.1:' + str(self.__wd_port) + '/wd/hub')
+        self.webdriver = webdriver.WebDriver(command_executor='http://127.0.0.1:' + str(self.wd_port) + '/wd/hub')
+        main_conn.send({
+            'action': 'update_wd_port',
+            'port': self.wd_port
+        })
 
     def get_restart_phantomjs_timer(self) -> threading.Timer:
         timer = threading.Timer(180, self.__restart_phantomjs)
@@ -241,17 +244,17 @@ class Device(Events):
         self.__init_webdriver()
 
     def __init_webdriver(self):
-        if self.__main:
+        if self.is_main:
             global phantomjs_port
             if phantomjs_port == 0:
                 phantomjs_port = get_free_port()
-                self.__wd_port = phantomjs_port
+                self.wd_port = phantomjs_port
                 wp = Popen([self.__path + "data/" + self.__phantomjs_name,
-                            "--webdriver=" + str(self.__wd_port)], stdout=PIPE, stderr=PIPE)
+                            "--webdriver=" + str(self.wd_port)], stdout=PIPE, stderr=PIPE)
                 wp.stdout.readline()
                 self.__wd_pid = wp.pid
             else:
-                self.__wd_port = phantomjs_port
+                self.wd_port = phantomjs_port
             ll = cdll.LoadLibrary
             self.libsr = ll(self.__path + "data/" + self.__lib_name)
             self.libsr.go.restype = ctypes.c_char_p
@@ -547,7 +550,7 @@ class Device(Events):
         刷新当前设备的UI布局信息。\n
         :return: 无
         """
-        if self.__main:
+        if self.is_main:
             self.xml_string = str(self.con.get(path="getLayoutXML").read(), 'utf-8').replace('\x08', '')
             self.__xml_time = time.time()
             watcher_xml_queue.put({'xml': self.xml_string, 'time': self.__xml_time})

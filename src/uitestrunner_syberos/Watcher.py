@@ -18,6 +18,7 @@ import psutil
 from typing import TypeVar
 from .DataStruct import WatcherActive
 from .DataStruct import Keys
+from .selenium_phantomjs.webdriver.remote import webdriver
 
 
 WatchContext_T = TypeVar('WatchContext_T', bound='WatchContext')
@@ -56,6 +57,11 @@ class WatchWorker:
             elif data['action'] == 'clear':
                 if data['object'] in self.__watcher_list_raw.keys():
                     del self.__watcher_list_raw[data['object']]
+            elif data['action'] == 'update_wd_port':
+                if data['port'] != self.device.wd_port:
+                    self.device.wd_port = data['port']
+                    self.device.webdriver = webdriver.WebDriver(command_executor='http://127.0.0.1:'
+                                                                                 + str(self.device.wd_port) + '/wd/hub')
             self.__watcher_list = []
             for obj in self.__watcher_list_raw.keys():
                 for watcher in self.__watcher_list_raw[obj].values():
