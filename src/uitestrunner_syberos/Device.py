@@ -46,6 +46,8 @@ from urllib.parse import quote_plus
 
 main_conn, watcher_conn = Pipe()
 watcher_xml_queue = Queue()
+mp_queue = Queue()
+pm_queue = Queue()
 watcher_xml_queue.cancel_join_thread()
 watcher_process_list = []
 phantomjs_port = 0
@@ -71,25 +73,50 @@ def _start_watcher(host, port, w_conn, w_xml_queue, wd_port):
     watcher_process.start()
 
 
-def _web_driver_daemon(main_pid, wb_pid, parent_pid):
+def __restart_phantomjs(wb_pid, pm_q, pt_q, ph_name):
+    psutil.Process(wb_pid).kill()
+    port = get_free_port()
+    wp = Popen([os.path.realpath(__file__).split(os.path.basename(__file__))[0] + "data/" + ph_name,
+                "--webdriver=" + str(port)], stdout=PIPE, stderr=PIPE)
+    wp.stdout.readline()
+    pt_q.put({'wb_pid': wp.pid})
+    pm_q.put({'wb_port': port, 'wb_pid': wp.pid})
+
+
+def _web_driver_daemon(main_pid, wb_pid, parent_pid, pm_q, mp_q, ph_name):
     psutil.Process(parent_pid).kill()
-    main_process = psutil.Process(main_pid)
-    wb_process = psutil.Process(wb_pid)
-    while main_process.is_running():
-        time.sleep(3)
-    if wb_process.is_running():
-        wb_process.kill()
+    tp_queue = Queue()
+    webdriver_pid = wb_pid
+    timer = threading.Timer(60, __restart_phantomjs, [webdriver_pid, pm_q, tp_queue, ph_name])
+    while True:
+        while not tp_queue.empty():
+            data = tp_queue.get()
+            webdriver_pid = data['wb_pid']
+            timer.cancel()
+            timer = threading.Timer(60, __restart_phantomjs, [webdriver_pid, pm_q, tp_queue, ph_name])
+        while not mp_q.empty():
+            data = mp_q.get()
+            if data['type'] == 1:
+                timer.cancel()
+                timer.start()
+            elif data['type'] == 0:
+                timer.cancel()
+        if not psutil.Process(main_pid).is_running():
+            if psutil.Process(webdriver_pid).is_running():
+                psutil.Process(webdriver_pid).kill()
+            break
+        sleep(0.1)
     exit(0)
 
 
-def _create_orphan_thread(main_pid, wb_pid):
-    wb_daemon_process = Process(target=_web_driver_daemon, args=(main_pid, wb_pid, os.getpid()))
+def _create_orphan_thread(main_pid, wb_pid, pm_q, mp_q, ph_name):
+    wb_daemon_process = Process(target=_web_driver_daemon, args=(main_pid, wb_pid, os.getpid(), pm_q, mp_q, ph_name))
     wb_daemon_process.daemon = False
     wb_daemon_process.start()
 
 
-def _start_web_driver_daemon(wb_pid):
-    orphan_thread = Process(target=_create_orphan_thread, args=(os.getpid(), wb_pid))
+def _start_web_driver_daemon(wb_pid, pm_q, mp_q, ph_name):
+    orphan_thread = Process(target=_create_orphan_thread, args=(os.getpid(), wb_pid, pm_q, mp_q, ph_name))
     orphan_thread.daemon = False
     orphan_thread.start()
 
@@ -188,7 +215,7 @@ class Device(Events):
             if self.control_host_type != Controller.ANYWHERE:
                 if self.control_host_type != Controller.WINDOWS_AMD64:
                     if self.__wd_pid != 0:
-                        _start_web_driver_daemon(self.__wd_pid)
+                        _start_web_driver_daemon(self.__wd_pid, pm_queue, mp_queue, self.__phantomjs_name)
                 if self.__host + '_' + str(self.__port) not in watcher_process_list:
                     watcher_process_list.append(self.__host + '_' + str(self.__port))
                     _start_watcher(host, port, watcher_conn, watcher_xml_queue, self.wd_port)
@@ -202,25 +229,23 @@ class Device(Events):
             self.webdriver = webdriver.WebDriver(command_executor='http://127.0.0.1:' + str(self.wd_port) + '/wd/hub')
         self.refresh_layout()
 
-    def __restart_phantomjs(self):
-        pp = psutil.Process(self.__wd_pid)
-        pp.kill()
-        global phantomjs_port
-        phantomjs_port = get_free_port()
-        self.wd_port = phantomjs_port
-        wp = Popen([self.__path + "data/" + self.__phantomjs_name,
-                    "--webdriver=" + str(self.wd_port)], stdout=PIPE, stderr=PIPE)
-        wp.stdout.readline()
-        self.__wd_pid = wp.pid
-        self.webdriver = webdriver.WebDriver(command_executor='http://127.0.0.1:' + str(self.wd_port) + '/wd/hub')
-        main_conn.send({
-            'action': 'update_wd_port',
-            'port': self.wd_port
-        })
+    def conn_phantomjs_before(self):
+        while not pm_queue.empty():
+            data = pm_queue.get()
+            self.__wd_pid = data['wb_pid']
+            global phantomjs_port
+            phantomjs_port = data['wd_port']
+            self.wd_port = phantomjs_port
+            self.webdriver = webdriver.WebDriver(command_executor='http://127.0.0.1:' + str(self.wd_port) + '/wd/hub')
+            main_conn.send({
+                'action': 'update_wd_port',
+                'port': self.wd_port
+            })
+        mp_queue.put({'type': 1})
 
-    def get_restart_phantomjs_timer(self) -> threading.Timer:
-        timer = threading.Timer(180, self.__restart_phantomjs)
-        return timer
+    @staticmethod
+    def conn_phantomjs_after():
+        mp_queue.put({'type': 0})
 
     def __check_platform(self):
         p = platform.system()

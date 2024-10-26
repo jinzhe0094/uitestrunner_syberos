@@ -571,9 +571,8 @@ class Item:
                                                    c_char_p(bytes(self.__attributes["temp_id"], "utf-8")),
                                                    c_int(self.__display_width),
                                                    c_int(self.__display_height))
-                timer = self.device.get_restart_phantomjs_timer()
                 if self.device.is_main:
-                    timer.start()
+                    self.device.conn_phantomjs_before()
                 self.device.webdriver.get("data:text/html;charset=utf-8," +
                                           html_string_1 + str(self.__display_width) +
                                           html_string_2 + str(self.__display_height) +
@@ -582,7 +581,7 @@ class Item:
                 image = cv2.imdecode(np.frombuffer(base64.b64decode(self.device.webdriver.get_screenshot_as_base64()),
                                                    np.uint8), cv2.COLOR_RGB2BGR)
                 if self.device.is_main:
-                    timer.cancel()
+                    self.device.conn_phantomjs_after()
                 image = image[0:self.__display_height, 0:self.__display_width]
             # win_name = str(self.device.system_time())
             # cv2.namedWindow(win_name, cv2.WINDOW_NORMAL)
