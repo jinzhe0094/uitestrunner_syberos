@@ -98,6 +98,7 @@ def _web_driver_daemon(main_pid, wb_pid, parent_pid, pm_q, mp_q, ph_name):
             data = mp_q.get()
             if data['type'] == 1:
                 timer.cancel()
+                timer = threading.Timer(60, __restart_phantomjs, [webdriver_pid, pm_q, tp_queue, ph_name])
                 timer.start()
             elif data['type'] == 0:
                 timer.cancel()
