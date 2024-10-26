@@ -49,6 +49,8 @@ watcher_xml_queue = Queue()
 mp_queue = Queue()
 pm_queue = Queue()
 watcher_xml_queue.cancel_join_thread()
+mp_queue.cancel_join_thread()
+pm_queue.cancel_join_thread()
 watcher_process_list = []
 phantomjs_port = 0
 
@@ -73,8 +75,9 @@ def _start_watcher(host, port, w_conn, w_xml_queue, wd_port):
     watcher_process.start()
 
 
-def __restart_phantomjs(wb_pid, pm_q, pt_q, ph_name):
-    psutil.Process(wb_pid).kill()
+def __restart_phantomjs(wb_proc, pm_q, pt_q, ph_name):
+    if wb_proc.is_running():
+        wb_proc.terminate()
     port = get_free_port()
     wp = Popen([os.path.realpath(__file__).split(os.path.basename(__file__))[0] + "data/" + ph_name,
                 "--webdriver=" + str(port)], stdout=PIPE, stderr=PIPE)
@@ -84,29 +87,35 @@ def __restart_phantomjs(wb_pid, pm_q, pt_q, ph_name):
 
 
 def _web_driver_daemon(main_pid, wb_pid, parent_pid, pm_q, mp_q, ph_name):
-    psutil.Process(parent_pid).kill()
+    psutil.Process(parent_pid).terminate()
     tp_queue = Queue()
-    webdriver_pid = wb_pid
-    timer = threading.Timer(60, __restart_phantomjs, [webdriver_pid, pm_q, tp_queue, ph_name])
+    tp_queue.cancel_join_thread()
+    main_proc = psutil.Process(main_pid)
+    wb_proc = psutil.Process(wb_pid)
+    timer = threading.Timer(6, __restart_phantomjs, [wb_proc, pm_q, tp_queue, ph_name])
     while True:
         while not tp_queue.empty():
             data = tp_queue.get()
-            webdriver_pid = data['wb_pid']
+            wb_proc = psutil.Process(data['wb_pid'])
             timer.cancel()
-            timer = threading.Timer(60, __restart_phantomjs, [webdriver_pid, pm_q, tp_queue, ph_name])
+            timer = threading.Timer(6, __restart_phantomjs, [wb_proc, pm_q, tp_queue, ph_name])
         while not mp_q.empty():
             data = mp_q.get()
             if data['type'] == 1:
                 timer.cancel()
-                timer = threading.Timer(60, __restart_phantomjs, [webdriver_pid, pm_q, tp_queue, ph_name])
+                timer = threading.Timer(6, __restart_phantomjs, [wb_proc, pm_q, tp_queue, ph_name])
                 timer.start()
             elif data['type'] == 0:
                 timer.cancel()
-        if not psutil.Process(main_pid).is_running():
-            if psutil.Process(webdriver_pid).is_running():
-                psutil.Process(webdriver_pid).kill()
+        if not main_proc.is_running():
+            if wb_proc.is_running():
+                wb_proc.terminate()
             break
         sleep(0.1)
+    timer.cancel()
+    tp_queue.close()
+    pm_q.close()
+    mp_q.close()
     exit(0)
 
 
@@ -235,7 +244,7 @@ class Device(Events):
             data = pm_queue.get()
             self.__wd_pid = data['wb_pid']
             global phantomjs_port
-            phantomjs_port = data['wd_port']
+            phantomjs_port = data['wb_port']
             self.wd_port = phantomjs_port
             self.webdriver = webdriver.WebDriver(command_executor='http://127.0.0.1:' + str(self.wd_port) + '/wd/hub')
             main_conn.send({
