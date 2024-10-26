@@ -92,18 +92,18 @@ def _web_driver_daemon(main_pid, wb_pid, parent_pid, pm_q, mp_q, ph_name):
     tp_queue.cancel_join_thread()
     main_proc = psutil.Process(main_pid)
     wb_proc = psutil.Process(wb_pid)
-    timer = threading.Timer(6, __restart_phantomjs, [wb_proc, pm_q, tp_queue, ph_name])
+    timer = threading.Timer(60, __restart_phantomjs, [wb_proc, pm_q, tp_queue, ph_name])
     while True:
         while not tp_queue.empty():
             data = tp_queue.get()
             wb_proc = psutil.Process(data['wb_pid'])
             timer.cancel()
-            timer = threading.Timer(6, __restart_phantomjs, [wb_proc, pm_q, tp_queue, ph_name])
+            timer = threading.Timer(60, __restart_phantomjs, [wb_proc, pm_q, tp_queue, ph_name])
         while not mp_q.empty():
             data = mp_q.get()
             if data['type'] == 1:
                 timer.cancel()
-                timer = threading.Timer(6, __restart_phantomjs, [wb_proc, pm_q, tp_queue, ph_name])
+                timer = threading.Timer(60, __restart_phantomjs, [wb_proc, pm_q, tp_queue, ph_name])
                 timer.start()
             elif data['type'] == 0:
                 timer.cancel()
