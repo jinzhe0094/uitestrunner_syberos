@@ -38,7 +38,7 @@ html_string_1 = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\">
                 "</title></head><body style=\"background:#000;clip:rect(auto,auto,auto,auto);" \
                 "\"><div id=\"content\" style=\"width:"
 html_string_2 = "px;height:"
-html_string_3 = "px;clip:rect(auto,auto,auto,auto);\">"
+html_string_3 = "px;clip:rect(auto,auto,auto,auto);position:absolute;overflow:hidden;\">"
 html_string_4 = "</div></body></html>"
 
 
@@ -582,7 +582,6 @@ class Item:
                                                    np.uint8), cv2.COLOR_RGB2BGR)
                 if self.device.is_main:
                     self.device.conn_phantomjs_after()
-                image = image[0:self.__display_height, 0:self.__display_width]
             # win_name = str(self.device.system_time())
             # cv2.namedWindow(win_name, cv2.WINDOW_NORMAL)
             # cv2.imshow(win_name, image)
