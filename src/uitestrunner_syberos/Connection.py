@@ -29,15 +29,20 @@ class Connection:
         self.device = d
         self.default_timeout = self.device.default_timeout
 
-    def connect(self):
+    def get(self, path, args="", headers=None, timeout=None):
+        if headers is None:
+            headers = {'Accept': 'text/plain; charset=UTF-8'}
+        if not timeout:
+            timeout = self.default_timeout
+        request = urllib.request.Request(url="http://" + self.host + ":" + str(self.port) + "/" + path + "?" + args,
+                                         headers=headers, method="GET")
         for i in range(11):
             try:
-                request = urllib.request.Request("http://" + self.host + ":" + str(self.port))
-                reply = urllib.request.urlopen(request, timeout=self.default_timeout)
+                reply = urllib.request.urlopen(request, timeout=timeout)
                 if i > 0:
                     print("重试成功。")
                 if reply.status == 200:
-                    return True
+                    return reply
             except Exception as e:
                 if i > 0:
                     print("第" + str(i) + "次重试失败！")
@@ -50,30 +55,33 @@ class Connection:
                         print("......" + str(5 - j))
                         sleep(1)
                     print("开始重试。")
-        return False
-
-    def get(self, path, args="", headers=None, timeout=None):
-        if headers is None:
-            headers = {'Accept': 'text/plain; charset=UTF-8'}
-        if not timeout:
-            timeout = self.default_timeout
-        try:
-            request = urllib.request.Request(url="http://" + self.host + ":" + str(self.port) + "/" + path + "?" + args,
-                                             headers=headers, method="GET")
-            reply = urllib.request.urlopen(request, timeout=timeout)
-        except http.client.BadStatusLine:
-            request = urllib.request.Request(url="http://" + self.host + ":" + str(self.port) + "/" + path + "?" + args,
-                                             headers=headers, method="GET")
-            reply = urllib.request.urlopen(request, timeout=timeout)
-        return reply
+        return None
 
     def post(self, path, data=None, headers=None, timeout=None):
         if not timeout:
             timeout = self.default_timeout
         request = urllib.request.Request(url="http://" + self.host + ":" + str(self.port) + "/" + path, data=data,
                                          headers=headers, method="POST")
-        reply = urllib.request.urlopen(request, timeout=timeout)
-        return reply
+        for i in range(11):
+            try:
+                reply = urllib.request.urlopen(request, timeout=timeout)
+                if i > 0:
+                    print("重试成功。")
+                if reply.status == 200:
+                    return reply
+            except Exception as e:
+                if i > 0:
+                    print("第" + str(i) + "次重试失败！")
+                else:
+                    print("设备连接失败！")
+                print("失败信息：" + str(e))
+                if i < 10:
+                    print("即将进行第" + str(i + 1) + "/10次重试，5秒后开始：")
+                    for j in range(5):
+                        print("......" + str(5 - j))
+                        sleep(1)
+                    print("开始重试。")
+        return None
 
     def sse(self, path):
         messages = SSEClient(url="http://" + self.host + ":" + str(self.port) + "/" + path)

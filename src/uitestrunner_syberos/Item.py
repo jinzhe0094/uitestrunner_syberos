@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import base64
+import urllib3.exceptions
 from PIL import Image
 from io import BytesIO
 import time
@@ -573,13 +574,19 @@ class Item:
                                                    c_int(self.__display_height))
                 if self.device.is_main:
                     self.device.conn_phantomjs_before()
-                self.device.webdriver.get("data:text/html;charset=utf-8," +
-                                          html_string_1 + str(self.__display_width) +
-                                          html_string_2 + str(self.__display_height) +
-                                          html_string_3 + string_at(html_string, -1).decode('utf-8') +
-                                          html_string_4)
-                image = cv2.imdecode(np.frombuffer(base64.b64decode(self.device.webdriver.get_screenshot_as_base64()),
-                                                   np.uint8), cv2.COLOR_RGB2BGR)
+                try:
+                    self.device.webdriver.get("data:text/html;charset=utf-8," +
+                                              html_string_1 + str(self.__display_width) +
+                                              html_string_2 + str(self.__display_height) +
+                                              html_string_3 + string_at(html_string, -1).decode('utf-8') +
+                                              html_string_4)
+                    image = cv2.imdecode(np.frombuffer(base64.b64decode(self.device.webdriver.get_screenshot_as_base64()),
+                                                       np.uint8), cv2.COLOR_RGB2BGR)
+                except (cv2.error, urllib3.exceptions.ProtocolError) as e:
+                    print(e)
+                    if self.device.is_main:
+                        self.device.conn_phantomjs_after()
+                    return []
                 if self.device.is_main:
                     self.device.conn_phantomjs_after()
             # win_name = str(self.device.system_time())

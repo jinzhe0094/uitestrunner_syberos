@@ -210,7 +210,6 @@ class Device(Events):
         if self.has_environment("SUPPORT_DEVICE_SERVER"):
             self.__support_device_server = self.get_environment("SUPPORT_DEVICE_SERVER")
         self.con = Connection(self.__host, self.__port, self)
-        self.con.connect()
         self.__path = os.path.realpath(__file__).split(os.path.basename(__file__))[0]
         self.__serial_number = str(self.con.get(path="getSerialNumber").read(), 'utf-8')
         self.__os_version = str(self.con.get(path="getOsVersion").read(), 'utf-8')
