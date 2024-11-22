@@ -1077,3 +1077,71 @@ class Events:
                           is_charging=bool(json_obj["is_charging"]),
                           battery_level=int(json_obj["battery_level"]))
         return stat
+
+    def set_app_permission(self, sopid: str, perm: str, enabled: bool) -> bool:
+        """
+        设置应用权限。\n
+        :param sopid: 应用包名
+        :param perm: 权限名称
+        :param enabled: 是否开启权限
+        :return: 成功返回True，否则为False
+        """
+        if perm not in self.device.permissions().keys():
+            print("set_app_permission: permission not found!")
+            return False
+        return self.__reply_status_check(
+            self.device.con.get(path="setAppPermission",
+                                args="sopid=" + sopid + "&perm=" + perm + "&enable=" + str(int(enabled))))
+
+    def set_app_permissions(self, sopid: str, perm_list: list, enabled: bool) -> bool:
+        """
+        设置应用权限。\n
+        :param sopid: 应用包名
+        :param perm_list: 权限名称列表
+        :param enabled: 是否开启权限
+        :return: 成功返回True，否则为False
+        """
+        if len(perm_list) == 0:
+            print("set_app_permissions: permission list is empty!")
+            return False
+        for perm in perm_list:
+            if perm not in self.device.permissions().keys():
+                print("set_app_permissions: permission \"" + perm + "\" not found!")
+                return False
+        return self.__reply_status_check(
+            self.device.con.get(path="setAppPermissions",
+                                args="sopid=" + sopid + "&perms=" + "|".join(perm_list) + "&enabled=" + str(int(enabled))))
+
+    def get_app_permissions(self, sopid: str) -> dict:
+        """
+        获取应用权限。\n
+        :param sopid: 应用包名
+        :return: 权限字典，key为权限名称，value为字典类型(包含中英文说明以及授权状态)
+        """
+        json_str = str(self.device.con.get(path="getAppPermissions", args="sopid=" + sopid).read(), 'utf-8')
+        return json.loads(json_str)
+
+    def check_app_permission(self, sopid: str, perm: str) -> bool:
+        """
+        检查应用权限。\n
+        :param sopid: 应用包名
+        :param perm: 权限名称
+        :return: 是否开启权限
+        """
+        return bool(int(self.device.con.get(path="checkAppPermission", args="sopid=" + sopid + "&perm=" + perm).read()))
+
+    def enable_all_permissions(self, sopid: str) -> bool:
+        """
+        启用应用所有权限。\n
+        :param sopid: 应用包名
+        :return: 成功返回True，否则为False
+        """
+        return self.__reply_status_check(self.device.con.get(path="enableAllPermissions", args="sopid=" + sopid))
+
+    def disable_all_permissions(self, sopid: str) -> bool:
+        """
+        禁用应用所有权限。\n
+        :param sopid: 应用包名
+        :return: 成功返回True，否则为False
+        """
+        return self.__reply_status_check(self.device.con.get(path="disableAllPermissions", args="sopid=" + sopid))

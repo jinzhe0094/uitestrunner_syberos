@@ -218,6 +218,7 @@ class Device(Events):
         self.__wd_pid = 0
         self.wd_port = 0
         self.__check_platform()
+        self.__permissions = {}
         if self.wd_port == 0:
             self.wd_port = _wd_port
         if self.is_main:
@@ -893,3 +894,14 @@ class Device(Events):
             reply = urllib.request.urlopen(request, timeout=self.default_timeout)
             return reply.read().decode('utf-8') == 'true'
         return False
+
+    def permissions(self) -> dict:
+        """
+        获取设备权限列表。\n
+        :return: 权限列表
+        """
+        if len(self.__permissions) == 0:
+            json_str = str(self.device.con.get(path="getAllPermissions").read(), 'utf-8')
+            json_obj = json.loads(json_str)
+            self.__permissions = json_obj
+        return self.__permissions
