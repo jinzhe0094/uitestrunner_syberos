@@ -3,13 +3,13 @@ from setuptools import setup, find_packages
 
 setup(
     name='uitestrunner_syberos',
-    version='2.7.4',
+    version='2.6.0',
     author='Jinzhe Wang',
     description='A ui automated testing tool for SyberOS',
     long_description=open('README.md', 'r').read(),
     long_description_content_type='text/markdown',
     author_email='wangjinzhe@syberos.com',
-    url='http://www.syberos.cn/',
+    url='https://www.syberos.com/',
     project_urls={
         "Source": "https://github.com/jinzhe0094/uitestrunner_syberos",
         "Api Doc": "https://doc.jinzhe.wang/uts/"
