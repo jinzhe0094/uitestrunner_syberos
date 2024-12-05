@@ -80,8 +80,7 @@ def __restart_phantomjs(wb_proc, pm_q, pt_q, ph_name):
         wb_proc.terminate()
     port = get_free_port()
     wp = Popen([os.path.realpath(__file__).split(os.path.basename(__file__))[0] + "data/" + ph_name,
-                "--webdriver=" + str(port)], stdout=PIPE, stderr=PIPE)
-    wp.stdout.readline()
+                "--webdriver=" + str(port)], stdout=DEVNULL, stderr=DEVNULL)
     pt_q.put({'wb_pid': wp.pid})
     pm_q.put({'wb_port': port, 'wb_pid': wp.pid})
 
@@ -285,8 +284,7 @@ class Device(Events):
                 phantomjs_port = get_free_port()
                 self.wd_port = phantomjs_port
                 wp = Popen([self.__path + "data/" + self.__phantomjs_name,
-                            "--webdriver=" + str(self.wd_port)], stdout=PIPE, stderr=PIPE)
-                wp.stdout.readline()
+                            "--webdriver=" + str(self.wd_port)], stdout=DEVNULL, stderr=DEVNULL)
                 self.__wd_pid = wp.pid
             else:
                 self.wd_port = phantomjs_port
