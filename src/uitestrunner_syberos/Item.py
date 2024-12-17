@@ -962,11 +962,11 @@ class Item:
         判断元素控件是否显示，显示则执行点击操作。\n
         :param delay: 点击延时时间(单位:毫秒), 默认无延时
         :param timeout: 超时时间(单位:秒)，默认为框架超时时间
-        :return: 点击成功返回True，否则返回False，若不存在则中断
+        :return: 点击成功返回True，失败或不存在返回False
         """
         if self.exist(timeout):
             return self.device.click(Point(self.rect[0][1]+1, self.rect[0][0]+1), delay)
-        assert False
+        return False
 
     def drag(self, p: Point, delay: int = 1):
         """

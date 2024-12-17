@@ -616,6 +616,13 @@ class Device(Events):
         """
         return self.__serial_number
 
+    def get_phone_number(self) -> List:
+        """
+        获取当前设备电话号码。\n
+        :return: 电话号码列表
+        """
+        return str(self.device.con.get(path="getPhoneNumbers").read(), 'utf-8').replace("+86", "").split(",")
+
     def get_topmost_info(self) -> dict:
         """
         获取当前显示顶层的应用信息。\n
