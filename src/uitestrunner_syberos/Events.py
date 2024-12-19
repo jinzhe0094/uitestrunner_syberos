@@ -1086,6 +1086,9 @@ class Events:
         :param enabled: 是否开启权限
         :return: 成功返回True，否则为False
         """
+        _fi = self.device.get_framework_info()
+        if _fi != {} and _fi['version_build'] < 241219:
+            return False
         if perm not in self.device.permissions().keys():
             print("set_app_permission: permission not found!")
             return False
@@ -1101,6 +1104,9 @@ class Events:
         :param enabled: 是否开启权限
         :return: 成功返回True，否则为False
         """
+        _fi = self.device.get_framework_info()
+        if _fi != {} and _fi['version_build'] < 241219:
+            return False
         if len(perm_list) == 0:
             print("set_app_permissions: permission list is empty!")
             return False
@@ -1118,6 +1124,9 @@ class Events:
         :param sopid: 应用包名
         :return: 权限字典，key为权限名称，value为字典类型(包含中英文说明以及授权状态)
         """
+        _fi = self.device.get_framework_info()
+        if _fi != {} and _fi['version_build'] < 241219:
+            return {}
         json_str = str(self.device.con.get(path="getAppPermissions", args="sopid=" + sopid).read(), 'utf-8')
         return json.loads(json_str)
 
@@ -1128,6 +1137,9 @@ class Events:
         :param perm: 权限名称
         :return: 是否开启权限
         """
+        _fi = self.device.get_framework_info()
+        if _fi != {} and _fi['version_build'] < 241219:
+            return False
         return bool(int(self.device.con.get(path="checkAppPermission", args="sopid=" + sopid + "&perm=" + perm).read()))
 
     def enable_all_permissions(self, sopid: str) -> bool:
@@ -1136,6 +1148,9 @@ class Events:
         :param sopid: 应用包名
         :return: 成功返回True，否则为False
         """
+        _fi = self.device.get_framework_info()
+        if _fi != {} and _fi['version_build'] < 241219:
+            return False
         return self.__reply_status_check(self.device.con.get(path="enableAllPermissions", args="sopid=" + sopid))
 
     def disable_all_permissions(self, sopid: str) -> bool:
@@ -1144,4 +1159,7 @@ class Events:
         :param sopid: 应用包名
         :return: 成功返回True，否则为False
         """
+        _fi = self.device.get_framework_info()
+        if _fi != {} and _fi['version_build'] < 241219:
+            return False
         return self.__reply_status_check(self.device.con.get(path="disableAllPermissions", args="sopid=" + sopid))

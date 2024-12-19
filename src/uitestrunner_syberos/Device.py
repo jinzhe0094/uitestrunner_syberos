@@ -214,6 +214,8 @@ class Device(Events):
         self.__path = os.path.realpath(__file__).split(os.path.basename(__file__))[0]
         self.__serial_number = str(self.con.get(path="getSerialNumber").read(), 'utf-8')
         self.__os_version = str(self.con.get(path="getOsVersion").read(), 'utf-8')
+        _fi = str(self.con.get(path="getFrameworkInfo").read(), 'utf-8')
+        self.__framework_info = {} if _fi == "" else json.loads(_fi)
         self.__set_display_size()
         self.is_main = _main
         self.__wd_pid = 0
@@ -495,10 +497,7 @@ class Device(Events):
         获取设备内的测试框架信息。\n
         :return: 字典形式信息键值对，可能为空
         """
-        json_str = str(self.con.get(path="getFrameworkInfo").read(), 'utf-8')
-        if json_str == "":
-            return {}
-        return json.loads(json_str)
+        return self.__framework_info
 
     def grab_image_to_base64(self, cx: int, cy: int, width: int, height: int, rotation: int = 0,
                              scale: float = 1) -> str:
@@ -621,6 +620,8 @@ class Device(Events):
         获取当前设备电话号码。\n
         :return: 电话号码列表
         """
+        if self.__framework_info != {} and self.__framework_info['version_build'] < 241219:
+            return []
         return str(self.device.con.get(path="getPhoneNumbers").read(), 'utf-8').replace("+86", "").split(",")
 
     def get_topmost_info(self) -> dict:
@@ -909,6 +910,8 @@ class Device(Events):
         获取设备权限列表。\n
         :return: 权限列表
         """
+        if self.__framework_info != {} and self.__framework_info < 241219:
+            return self.__permissions
         if len(self.__permissions) == 0:
             json_str = str(self.device.con.get(path="getAllPermissions").read(), 'utf-8')
             json_obj = json.loads(json_str)
