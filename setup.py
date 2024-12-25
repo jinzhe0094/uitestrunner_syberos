@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='uitestrunner_syberos',
-    version='2.8.1',
+    version='2.8.2',
     author='Jinzhe Wang',
     description='A ui automated testing tool for SyberOS',
     long_description=open('README.md', 'r').read(),

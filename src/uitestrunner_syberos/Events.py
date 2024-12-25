@@ -810,7 +810,7 @@ class Events:
                         else:
                             if syberdroid and selector.get("androidApp") == "1" and selector.get("sopId") == "com.android.permissioncontroller":
                                 return True
-                            if not syberdroid and selector.get("androidApp") == "0" and selector.get("sopId") == "com.syberos.systemui":
+                            if not syberdroid and selector.get("androidApp") != "1" and selector.get("sopId") == "systemui(FAKE_VALUE)":
                                 return True
                     break
                 except etree.XMLSyntaxError:
@@ -1061,13 +1061,11 @@ class Events:
         _fi = self.device.get_framework_info()
         if _fi != {} and _fi['version_build'] < 241225:
             return False
-        if timeout is None:
-            timeout = self.device.default_timeout
         if len(password) < 8:
             return False
-        return bool(int(self.device.con.get(path="connectOpenWiFi", args="ssid=" + ssid + "&password=" + password
-                                                                         + "&timeout="
-                                                                         + str(timeout)).read()))
+        to_str = "&timeout=" + str(timeout) if timeout else ""
+        return bool(int(self.device.con.get(path="connectPskWiFi", args="ssid=" + ssid + "&password=" + password
+                                                                         + to_str).read()))
 
     def set_wlan_enabled(self, enable: bool) -> bool:
         """
