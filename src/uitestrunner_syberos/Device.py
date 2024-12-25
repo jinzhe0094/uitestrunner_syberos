@@ -214,8 +214,6 @@ class Device(Events):
         self.__path = os.path.realpath(__file__).split(os.path.basename(__file__))[0]
         self.__serial_number = str(self.con.get(path="getSerialNumber").read(), 'utf-8')
         self.__os_version = str(self.con.get(path="getOsVersion").read(), 'utf-8')
-        _fi = str(self.con.get(path="getFrameworkInfo").read(), 'utf-8')
-        self.__framework_info = {} if _fi == "" else json.loads(_fi)
         self.__set_display_size()
         self.is_main = _main
         self.__wd_pid = 0
@@ -497,7 +495,10 @@ class Device(Events):
         获取设备内的测试框架信息。\n
         :return: 字典形式信息键值对，可能为空
         """
-        return self.__framework_info
+        json_str = str(self.con.get(path="getFrameworkInfo").read(), 'utf-8')
+        if json_str == "":
+            return {}
+        return json.loads(json_str)
 
     def grab_image_to_base64(self, cx: int, cy: int, width: int, height: int, rotation: int = 0,
                              scale: float = 1) -> str:
@@ -620,8 +621,6 @@ class Device(Events):
         获取当前设备电话号码。\n
         :return: 电话号码列表
         """
-        if self.__framework_info != {} and self.__framework_info['version_build'] < 241219:
-            return []
         return str(self.device.con.get(path="getPhoneNumbers").read(), 'utf-8').replace("+86", "").split(",")
 
     def get_topmost_info(self) -> dict:
@@ -721,37 +720,39 @@ class Device(Events):
         """
         pr = rotation
         if pr is None:
-            pr = item.rotation()
-        image_base64 = item.grab_image_to_base64()
-        im = Image.open(io.BytesIO(base64.b64decode(image_base64)))
-        rotate_im = im.rotate(pr, expand=True)
-        width, height = rotate_im.size
-        buffered = io.BytesIO()
-        rotate_im.save(buffered, format="PNG")
-        base64_rotated_image = base64.b64encode(buffered.getvalue()).decode()
-        if self.__ocr_server:
-            res = requests.post(url=self.__ocr_server, data=bytes("@$START$@" + base64_rotated_image + "@$END$@", 'utf-8'))
-            text_item_info_list = json.loads(res.content)
-        else:
-            image = open(sys.path[0] + "/orc_temp_image.png", "wb")
-            imdata = base64.b64decode(base64_rotated_image)
-            image.write(imdata)
-            image.close()
-            reader = easyocr.Reader(['ch_sim', 'en'], gpu=True, model_storage_directory=self.__ocr_mods)
-            text_item_info_list = reader.readtext(sys.path[0] + '/orc_temp_image.png')
+          pr = item.rotation()
         text_item_list = []
-        for text_item_info in text_item_info_list:
-            x = text_item_info[0][0][0]
-            y = text_item_info[0][0][1]
-            w = text_item_info[0][2][0] - x
-            h = text_item_info[0][2][1] - y
-            text = text_item_info[1]
-            vector_x = x - width / 2
-            vector_y = y - height / 2
-            rotate_vector_x, rotate_vector_y = rotate_point_clockwise((vector_x, vector_y), (0, 0), pr)
-            real_x = item.center_x_to_global() + rotate_vector_x
-            real_t = item.center_y_to_global() + rotate_vector_y
-            text_item_list.append(TextItemFromOcr(real_x, real_t, w, h, pr, text, self))
+        if item.exist():
+            image_base64 = item.grab_image_to_base64()
+            im = Image.open(io.BytesIO(base64.b64decode(image_base64)))
+            rotate_im = im.rotate(pr, expand=True)
+            width, height = rotate_im.size
+            buffered = io.BytesIO()
+            rotate_im.save(buffered, format="PNG")
+            base64_rotated_image = base64.b64encode(buffered.getvalue()).decode()
+            if self.__ocr_server:
+                res = requests.post(url=self.__ocr_server, data=bytes("@$START$@" + base64_rotated_image + "@$END$@", 'utf-8'))
+                text_item_info_list = json.loads(res.content)
+            else:
+                image = open(sys.path[0] + "/orc_temp_image.png", "wb")
+                imdata = base64.b64decode(base64_rotated_image)
+                image.write(imdata)
+                image.close()
+                reader = easyocr.Reader(['ch_sim', 'en'], gpu=True, model_storage_directory=self.__ocr_mods)
+                text_item_info_list = reader.readtext(sys.path[0] + '/orc_temp_image.png')
+
+            for text_item_info in text_item_info_list:
+                x = text_item_info[0][0][0]
+                y = text_item_info[0][0][1]
+                w = text_item_info[0][2][0] - x
+                h = text_item_info[0][2][1] - y
+                text = text_item_info[1]
+                vector_x = x - width / 2
+                vector_y = y - height / 2
+                rotate_vector_x, rotate_vector_y = rotate_point_clockwise((vector_x, vector_y), (0, 0), pr)
+                real_x = item.center_x_to_global() + rotate_vector_x
+                real_t = item.center_y_to_global() + rotate_vector_y
+                text_item_list.append(TextItemFromOcr(real_x, real_t, w, h, pr, text, self))
         return text_item_list
 
     def support_rotate_screen(self) -> bool:
@@ -910,8 +911,6 @@ class Device(Events):
         获取设备权限列表。\n
         :return: 权限列表
         """
-        if self.__framework_info != {} and self.__framework_info < 241219:
-            return self.__permissions
         if len(self.__permissions) == 0:
             json_str = str(self.device.con.get(path="getAllPermissions").read(), 'utf-8')
             json_obj = json.loads(json_str)

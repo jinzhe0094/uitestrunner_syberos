@@ -259,7 +259,7 @@ class Item:
         if self.node.getparent() is None:
             return None
         pn = self.node.getprevious()
-        while pn:
+        while pn is not None:
             if pn.tag == self.node.tag:
                 return Item(self.device, self.sopid, "", pn)
             pn = pn.getprevious()
@@ -292,7 +292,7 @@ class Item:
         if self.node.getparent() is None:
             return None
         nn = self.node.getnext()
-        while nn:
+        while nn is not None:
             if nn.tag == self.node.tag:
                 return Item(self.device, self.sopid, "", nn)
             nn = nn.getnext()

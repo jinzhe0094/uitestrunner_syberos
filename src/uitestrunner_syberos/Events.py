@@ -144,8 +144,8 @@ class Events:
         :param delay: 点击延时时间(单位:毫秒)，默认无延时
         :return: 成功返回True，否则为False
         """
-        return self.__reply_status_check(self.device.con.get(path="sendTouchEvent", args="points=" + str(point.x)
-                                                                                         + "|" + str(point.y)
+        return self.__reply_status_check(self.device.con.get(path="sendTouchEvent", args="points=" + str(int(point.x))
+                                                                                         + "|" + str(int(point.y))
                                                                                          + "&delay=" + str(delay)))
 
     def multi_click(self, points: List[Point], delay: int = 0) -> bool:
@@ -157,7 +157,7 @@ class Events:
         """
         args = ""
         for point in points:
-            args += str(point.x) + "|" + str(point.y)
+            args += str(int(point.x)) + "|" + str(int(point.y))
             if points.index(point) != len(points) - 1:
                 args += ","
         return self.__reply_status_check(self.device.con.get(path="sendTouchEvent", args="points=" + args
@@ -170,10 +170,10 @@ class Events:
         :param p2: 坐标点类Point对象，终点
         :return: 成功返回True，否则为False
         """
-        return self.__reply_status_check(self.device.con.get(path="sendSlideEvent", args="sliders=" + str(p1.x)
-                                                                                         + "|" + str(p1.y)
-                                                                                         + "->" + str(p2.x)
-                                                                                         + "|" + str(p2.y)))
+        return self.__reply_status_check(self.device.con.get(path="sendSlideEvent", args="sliders=" + str(int(p1.x))
+                                                                                         + "|" + str(int(p1.y))
+                                                                                         + "->" + str(int(p2.x))
+                                                                                         + "|" + str(int(p2.y))))
 
     def drag(self, p1: Point, p2: Point, delay: int = 1) -> bool:
         """
@@ -185,7 +185,7 @@ class Events:
         """
         begin = self.__reply_status_check(
             self.device.con.get(path="sendTouchEventPWithUInput",
-                                args="type=1&slot=9&id=9&x=" + str(p1.x) + "&y=" + str(p1.y)))
+                                args="type=1&slot=9&id=9&x=" + str(int(p1.x)) + "&y=" + str(int(p1.y))))
         sleep(delay)
         distance = math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2)
         if distance > 30:
@@ -207,7 +207,7 @@ class Events:
                                 args="type=2&slot=9&id=9&x=" + str(int(tx)) + "&y=" + str(int(ty)))
         end = self.__reply_status_check(
             self.device.con.get(path="sendTouchEventPWithUInput",
-                                args="type=0&slot=9&id=9&x=" + str(p2.x) + "&y=" + str(p2.y)))
+                                args="type=0&slot=9&id=9&x=" + str(int(p2.x)) + "&y=" + str(int(p2.y))))
         return begin and end
 
     def route_drag(self, pl: List[Point], delay: int = 1) -> bool:
@@ -221,7 +221,7 @@ class Events:
             return False
         begin = self.__reply_status_check(
             self.device.con.get(path="sendTouchEventPWithUInput",
-                                args="type=1&slot=9&id=9&x=" + str(pl[0].x) + "&y=" + str(pl[0].y)))
+                                args="type=1&slot=9&id=9&x=" + str(int(pl[0].x)) + "&y=" + str(int(pl[0].y))))
         sleep(delay)
         for i in range(len(pl) - 1):
             p1 = pl[i]
@@ -246,7 +246,7 @@ class Events:
                                     args="type=2&slot=9&id=9&x=" + str(int(tx)) + "&y=" + str(int(ty)))
         end = self.__reply_status_check(
             self.device.con.get(path="sendTouchEventPWithUInput",
-                                args="type=0&slot=9&id=9&x=" + str(pl[len(pl) - 1].x) + "&y=" + str(pl[len(pl) - 1].y)))
+                                args="type=0&slot=9&id=9&x=" + str(int(pl[len(pl) - 1].x)) + "&y=" + str(int(pl[len(pl) - 1].y))))
         return begin and end
 
     def route_swipe(self, pl: List[Point]) -> bool:
@@ -266,9 +266,9 @@ class Events:
         """
         args = ""
         for point1 in points1:
-            args += str(point1.x) + "|" + str(point1.y) \
-                    + "->" + str(points2[points1.index(point1)].x) \
-                    + "|" + str(points2[points1.index(point1)].y)
+            args += str(int(point1.x)) + "|" + str(int(point1.y)) \
+                    + "->" + str(int(points2[points1.index(point1)].x)) \
+                    + "|" + str(int(points2[points1.index(point1)].y))
             if points1.index(point1) != len(points1) - 1:
                 args += ","
         return self.__reply_status_check(self.device.con.get(path="sendSlideEvent", args="sliders=" + args))
@@ -799,12 +799,19 @@ class Events:
                 try:
                     self.device.refresh_layout()
                     selector = etree.XML(self.device.xml_string.encode('utf-8'))
-                    if selector.get("sopId") == sopid:
-                        if not syberdroid or selector.get("androidApp") == "1":
+                    _fi = self.device.get_framework_info()
+                    if _fi != {} and _fi['version_build'] < 241219:
+                        if selector.get("sopId") == sopid:
                             return True
                     else:
-                        if syberdroid and selector.get("androidApp") == "1" and selector.get("sopId") == "com.android.permissioncontroller":
-                            return True
+                        if selector.get("sopId") == sopid:
+                            if not syberdroid or selector.get("androidApp") == "1":
+                                return True
+                        else:
+                            if syberdroid and selector.get("androidApp") == "1" and selector.get("sopId") == "com.android.permissioncontroller":
+                                return True
+                            if not syberdroid and selector.get("androidApp") == "0" and selector.get("sopId") == "com.syberos.systemui":
+                                return True
                     break
                 except etree.XMLSyntaxError:
                     continue
@@ -1043,6 +1050,43 @@ class Events:
                                                                          + "&timeout="
                                                                          + str(timeout)).read()))
 
+    def connect_psk_wifi(self, ssid: str, password: str, timeout: int = None) -> bool:
+        """
+        连接设备至PSK加密的WiFi网络。\n
+        :param ssid: WiFi网络名称
+        :param password: WIFI密码
+        :param timeout: 超时时间(单位:秒)，默认为框架超时时间
+        :return: 成功返回True，否则为False
+        """
+        _fi = self.device.get_framework_info()
+        if _fi != {} and _fi['version_build'] < 241225:
+            return False
+        if timeout is None:
+            timeout = self.device.default_timeout
+        if len(password) < 8:
+            return False
+        return bool(int(self.device.con.get(path="connectOpenWiFi", args="ssid=" + ssid + "&password=" + password
+                                                                         + "&timeout="
+                                                                         + str(timeout)).read()))
+
+    def set_wlan_enabled(self, enable: bool) -> bool:
+        """
+        设置设备WLAN功能是否开启。
+        """
+        _fi = self.device.get_framework_info()
+        if _fi != {} and _fi['version_build'] < 241225:
+            return False
+        return bool(int(self.device.con.get(path="setWlanEnabled", args="enabled=" + str(int(enable))).read()))
+
+    def get_wlan_enabled(self) -> bool:
+        """
+        获取设备WLAN功能是否开启。
+        """
+        _fi = self.device.get_framework_info()
+        if _fi != {} and _fi['version_build'] < 241225:
+            return False
+        return bool(int(self.device.con.get(path="getWlanEnabled").read()))
+
     def password_exists(self) -> bool:
         """
         查询设备是否存在锁屏密码。\n
@@ -1094,7 +1138,7 @@ class Events:
             return False
         return self.__reply_status_check(
             self.device.con.get(path="setAppPermission",
-                                args="sopid=" + sopid + "&perm=" + perm + "&enable=" + str(int(enabled))))
+                                args="sopid=" + sopid + "&perm=" + perm + "&enabled=" + str(int(enabled))))
 
     def set_app_permissions(self, sopid: str, perm_list: list, enabled: bool) -> bool:
         """
