@@ -621,6 +621,9 @@ class Device(Events):
         获取当前设备电话号码。\n
         :return: 电话号码列表
         """
+        _fi = self.device.get_framework_info()
+        if _fi != {} and _fi['version_build'] < 241219:
+            return []
         return str(self.device.con.get(path="getPhoneNumbers").read(), 'utf-8').replace("+86", "").split(",")
 
     def get_topmost_info(self) -> dict:
@@ -911,6 +914,9 @@ class Device(Events):
         获取设备权限列表。\n
         :return: 权限列表
         """
+        _fi = self.device.get_framework_info()
+        if _fi != {} and _fi['version_build'] < 241219:
+            return []
         if len(self.__permissions) == 0:
             json_str = str(self.device.con.get(path="getAllPermissions").read(), 'utf-8')
             json_obj = json.loads(json_str)
