@@ -107,6 +107,7 @@ class Item:
 
     def __refresh_node(self):
         self.device.refresh_layout()
+        self.node = None
         if self.xpath != "":
             for i in range(0, 10):
                 try:
