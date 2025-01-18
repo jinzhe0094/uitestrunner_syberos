@@ -1120,34 +1120,41 @@ class Events:
                           battery_level=int(json_obj["battery_level"]))
         return stat
 
-    def set_app_permission(self, sopid: str, perm: str, enabled: bool) -> bool:
+    def set_app_permission(self, sopid: str, perm: str, enabled: bool, syberdroid: bool = False) -> bool:
         """
         设置应用权限。\n
         :param sopid: 应用包名
         :param perm: 权限名称
         :param enabled: 是否开启权限
+        :param syberdroid: 是否为安卓兼容应用，默认为否
         :return: 成功返回True，否则为False
         """
         _fi = self.device.get_framework_info()
         if _fi != {} and _fi['version_build'] < 241219:
+            return False
+        if syberdroid and (_fi == {} or not _fi['syberdroid'] or _fi['version_build'] < 250118):
             return False
         if perm not in self.device.permissions().keys():
             print("set_app_permission: permission not found!")
             return False
         return self.__reply_status_check(
             self.device.con.get(path="setAppPermission",
-                                args="sopid=" + sopid + "&perm=" + perm + "&enabled=" + str(int(enabled))))
+                                args="sopid=" + sopid + "&perm=" + perm + "&enabled=" + str(int(enabled))
+                                     + "&androidapp=" + str(int(syberdroid))))
 
-    def set_app_permissions(self, sopid: str, perm_list: list, enabled: bool) -> bool:
+    def set_app_permissions(self, sopid: str, perm_list: list, enabled: bool, syberdroid: bool = False) -> bool:
         """
         设置应用权限。\n
         :param sopid: 应用包名
         :param perm_list: 权限名称列表
         :param enabled: 是否开启权限
+        :param syberdroid: 是否为安卓兼容应用，默认为否
         :return: 成功返回True，否则为False
         """
         _fi = self.device.get_framework_info()
         if _fi != {} and _fi['version_build'] < 241219:
+            return False
+        if syberdroid and (_fi == {} or not _fi['syberdroid'] or _fi['version_build'] < 250118):
             return False
         if len(perm_list) == 0:
             print("set_app_permissions: permission list is empty!")
@@ -1158,50 +1165,67 @@ class Events:
                 return False
         return self.__reply_status_check(
             self.device.con.get(path="setAppPermissions",
-                                args="sopid=" + sopid + "&perms=" + "|".join(perm_list) + "&enabled=" + str(int(enabled))))
+                                args="sopid=" + sopid + "&perms=" + "|".join(perm_list) + "&enabled=" + str(int(enabled))
+                                     + "&androidapp=" + str(int(syberdroid))))
 
-    def get_app_permissions(self, sopid: str) -> dict:
+    def get_app_permissions(self, sopid: str, syberdroid: bool = False) -> dict:
         """
         获取应用权限。\n
         :param sopid: 应用包名
-        :return: 权限字典，key为权限名称，value为字典类型(包含中英文说明以及授权状态)
+        :param syberdroid: 是否为安卓兼容应用，默认为否
+        :return: 权限字典，key为权限名称，value为字典类型(包含中英文说明以及授权状态，当查询安卓应用时则是中文名称、说明、授权状态以及安卓标识)
         """
         _fi = self.device.get_framework_info()
         if _fi != {} and _fi['version_build'] < 241219:
             return {}
-        json_str = str(self.device.con.get(path="getAppPermissions", args="sopid=" + sopid).read(), 'utf-8')
+        if syberdroid and (_fi == {} or not _fi['syberdroid'] or _fi['version_build'] < 250118):
+            return {}
+        json_str = str(self.device.con.get(path="getAppPermissions",
+                                           args="sopid=" + sopid + "&androidapp=" + str(int(syberdroid))).read(), 'utf-8')
         return json.loads(json_str)
 
-    def check_app_permission(self, sopid: str, perm: str) -> bool:
+    def check_app_permission(self, sopid: str, perm: str, syberdroid: bool = False) -> bool:
         """
         检查应用权限。\n
         :param sopid: 应用包名
         :param perm: 权限名称
+        :param syberdroid: 是否为安卓兼容应用，默认为否
         :return: 是否开启权限
         """
         _fi = self.device.get_framework_info()
         if _fi != {} and _fi['version_build'] < 241219:
             return False
-        return bool(int(self.device.con.get(path="checkAppPermission", args="sopid=" + sopid + "&perm=" + perm).read()))
+        if syberdroid and (_fi == {} or not _fi['syberdroid'] or _fi['version_build'] < 250118):
+            return False
+        return bool(int(self.device.con.get(path="checkAppPermission", args="sopid=" + sopid + "&perm=" + perm
+                                                                            + "&androidapp=" + str(int(syberdroid))).read()))
 
-    def enable_all_permissions(self, sopid: str) -> bool:
+    def enable_all_permissions(self, sopid: str, syberdroid: bool = False) -> bool:
         """
         启用应用所有权限。\n
         :param sopid: 应用包名
+        :param syberdroid: 是否为安卓兼容应用，默认为否
         :return: 成功返回True，否则为False
         """
         _fi = self.device.get_framework_info()
         if _fi != {} and _fi['version_build'] < 241219:
             return False
-        return self.__reply_status_check(self.device.con.get(path="enableAllPermissions", args="sopid=" + sopid))
+        if syberdroid and (_fi == {} or not _fi['syberdroid'] or _fi['version_build'] < 250118):
+            return False
+        return self.__reply_status_check(self.device.con.get(path="enableAllPermissions",
+                                                             args="sopid=" + sopid + "&androidapp=" + str(int(syberdroid))))
 
-    def disable_all_permissions(self, sopid: str) -> bool:
+    def disable_all_permissions(self, sopid: str, syberdroid: bool = False) -> bool:
         """
         禁用应用所有权限。\n
         :param sopid: 应用包名
+        :param syberdroid: 是否为安卓兼容应用，默认为否
         :return: 成功返回True，否则为False
         """
         _fi = self.device.get_framework_info()
         if _fi != {} and _fi['version_build'] < 241219:
             return False
-        return self.__reply_status_check(self.device.con.get(path="disableAllPermissions", args="sopid=" + sopid))
+        if syberdroid and (_fi == {} or not _fi['syberdroid'] or _fi['version_build'] < 250118):
+            return False
+        return self.__reply_status_check(self.device.con.get(path="disableAllPermissions",
+                                                             args="sopid=" + sopid + "&androidapp=" + str(int(syberdroid))))

@@ -916,7 +916,7 @@ class Device(Events):
         """
         _fi = self.device.get_framework_info()
         if _fi != {} and _fi['version_build'] < 241219:
-            return []
+            return {}
         if len(self.__permissions) == 0:
             json_str = str(self.device.con.get(path="getAllPermissions").read(), 'utf-8')
             json_obj = json.loads(json_str)
