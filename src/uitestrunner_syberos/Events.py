@@ -815,8 +815,6 @@ class Events:
                     break
                 except etree.XMLSyntaxError:
                     continue
-            self.device.con.get(path="launchApp", args="sopid=" + sopid + "&uiappid=" + uiappid + "&androidapp="
-                                                       + str(int(syberdroid)))
             sleep(1)
         return False
 
