@@ -19,6 +19,7 @@ import platform
 import re
 import socket
 import sys
+import zlib
 import threading
 import ctypes
 from ctypes import *
@@ -588,7 +589,7 @@ class Device(Events):
         :return: 无
         """
         if self.is_main:
-            self.xml_string = str(self.con.get(path="getLayoutXML").read(), 'utf-8').replace('\x08', '')
+            self.xml_string = str(zlib.decompress(self.con.get(path="getLayoutXML", args="compress=1").read()[4:]), 'utf-8').replace('\x08', '')
             self.__xml_time = time.time()
             watcher_xml_queue.put({'xml': self.xml_string, 'time': self.__xml_time})
         else:
@@ -599,7 +600,7 @@ class Device(Events):
                 self.xml_string = data['xml']
                 self.__xml_time = data['time']
             else:
-                self.xml_string = str(self.con.get(path="getLayoutXML").read(), 'utf-8').replace('\x08', '')
+                self.xml_string = str(zlib.decompress(self.con.get(path="getLayoutXML", args="compress=1").read()[4:]), 'utf-8').replace('\x08', '')
                 self.__xml_time = time.time()
 
     def os_version(self) -> str:
