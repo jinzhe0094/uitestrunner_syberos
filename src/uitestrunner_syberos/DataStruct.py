@@ -234,12 +234,16 @@ class PasswordType(enum.Enum):
     :ivar PASSWORD_WEAK: 简单密码
     :ivar PASSWORD_STRONG: 复杂密码
     :ivar PASSWORD_GRAPHIC: 图形密码
+    :ivar PASSWORD_WEAK6: 6位数字密码
+    :ivar PASSWORD_NUMS: 4-32位数字密码
     :ivar PASSWORD_NONE: 无密码
     """
     PASSWORD_WEAK = 0
     PASSWORD_STRONG = 1
     PASSWORD_GRAPHIC = 2
-    PASSWORD_NONE = 3
+    PASSWORD_WEAK6 = 3
+    PASSWORD_NUMS = 4
+    PASSWORD_NONE = 5
 
 
 class AuthenError(enum.Enum):
