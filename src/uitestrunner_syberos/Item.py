@@ -107,8 +107,8 @@ class Item:
 
     def __refresh_node(self):
         self.device.refresh_layout()
-        self.node = None
         if self.xpath != "":
+            self.node = None
             for i in range(0, 10):
                 try:
                     selector = etree.XML(self.device.xml_string.encode('utf-8'))
