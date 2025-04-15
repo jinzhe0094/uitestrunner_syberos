@@ -77,3 +77,5 @@ html_search_language = 'zh'
 html_search_options = { 
     'dict': os.path.join(os.path.dirname(os.path.realpath(__file__)), 'dict.txt')
 }
+
+autodoc_member_order = 'bysource'
