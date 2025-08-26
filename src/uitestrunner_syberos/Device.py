@@ -923,3 +923,26 @@ class Device(Events):
             json_obj = json.loads(json_str)
             self.__permissions = json_obj
         return self.__permissions
+
+    def system_config_set(self, section: str, group: str, key: str, value: str):
+        """
+        设置系统配置。\n
+        :param section: 配置项所属的模块
+        :param group: 配置项所属的组
+        :param key: 配置项的键
+        :param value: 配置项的值
+        :return: 成功返回True，否则返回False
+        """
+        return self.__reply_status_check(self.con.get(path="configSetValue", args="section=" + section
+                                                      + "&group=" + group + "&key=" + key + "&value=" + value))
+
+    def system_config_get(self, section: str, group: str, key: str) -> str:
+        """
+        获取系统配置。\n
+        :param section: 配置项所属的模块
+        :param group: 配置项所属的组
+        :param key: 配置项的键
+        :return: 配置项的值
+        """
+        return str(self.con.get(path="configGetValue", args="section=" + section
+                                                            + "&group=" + group + "&key=" + key).read(), 'utf-8')
