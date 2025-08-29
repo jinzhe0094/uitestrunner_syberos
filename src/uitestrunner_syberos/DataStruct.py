@@ -313,3 +313,17 @@ class SystemStat:
         :return: 百分比整数
         """
         return self._battery_level
+
+
+class SystemNavigationType(enum.Enum):
+    """
+    系统导航类型。\n
+    :ivar NAVIGATION_CLASSIC_LEFT_BACK: 经典导航键，返回键在左侧
+    :ivar NAVIGATION_CLASSIC_RIGHT_BACK: 经典导航键，返回键在右侧
+    :ivar NAVIGATION_GESTURE_WITH_SSA: 全屏手势导航，开启底部边缘横滑切换应用
+    :ivar NAVIGATION_GESTURE_WITHOUT_SSA: 全屏手势导航，关闭底部边缘横滑切换应用
+    """
+    NAVIGATION_CLASSIC_LEFT_BACK = 0
+    NAVIGATION_CLASSIC_RIGHT_BACK = 1
+    NAVIGATION_GESTURE_WITH_SSA = 2
+    NAVIGATION_GESTURE_WITHOUT_SSA = 3

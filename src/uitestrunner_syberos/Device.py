@@ -924,7 +924,7 @@ class Device(Events):
             self.__permissions = json_obj
         return self.__permissions
 
-    def system_config_set(self, section: str, group: str, key: str, value: str):
+    def set_system_config(self, section: str, group: str, key: str, value: str) -> bool:
         """
         设置系统配置。\n
         :param section: 配置项所属的模块
@@ -936,7 +936,7 @@ class Device(Events):
         return self.__reply_status_check(self.con.get(path="configSetValue", args="section=" + section
                                                       + "&group=" + group + "&key=" + key + "&value=" + value))
 
-    def system_config_get(self, section: str, group: str, key: str) -> str:
+    def get_system_config(self, section: str, group: str, key: str) -> str:
         """
         获取系统配置。\n
         :param section: 配置项所属的模块
@@ -946,3 +946,39 @@ class Device(Events):
         """
         return str(self.con.get(path="configGetValue", args="section=" + section
                                                             + "&group=" + group + "&key=" + key).read(), 'utf-8')
+
+    def set_system_navigation(self, snt: SystemNavigationType) -> bool:
+        """
+        设置系统导航。\n
+        :param snt: 系统导航类型
+        :return: 成功返回True，否则返回False
+        """
+        if snt == SystemNavigationType.NAVIGATION_CLASSIC_LEFT_BACK:
+            return (self.set_system_config("com.syberos.settings.vkp", "group", "vkp_visible", "true")
+                    and self.set_system_config("com.syberos.settings.vkp", "group", "vkp_layout", "1"))
+        elif snt == SystemNavigationType.NAVIGATION_CLASSIC_RIGHT_BACK:
+            return (self.set_system_config("com.syberos.settings.vkp", "group", "vkp_visible", "true")
+                    and self.set_system_config("com.syberos.settings.vkp", "group", "vkp_layout", "0"))
+        elif snt == SystemNavigationType.NAVIGATION_GESTURE_WITH_SSA:
+            return (self.set_system_config("com.syberos.settings.vkp", "group", "vkp_visible", "true")
+                    and self.set_system_config("com.syberos.settings.swipeSwitchApps", "group", "swipeSwitchApps_enabled", "true"))
+        elif snt == SystemNavigationType.NAVIGATION_GESTURE_WITHOUT_SSA:
+            return (self.set_system_config("com.syberos.settings.vkp", "group", "vkp_visible", "false")
+                    and self.set_system_config("com.syberos.settings.swipeSwitchApps", "group", "swipeSwitchApps_enabled", "false"))
+        return False
+
+    def get_system_navigation(self) -> SystemNavigationType:
+        """
+        获取系统导航。\n
+        :return: 系统导航类型
+        """
+        if self.get_system_config("com.syberos.settings.vkp", "group", "vkp_visible") == "true":
+            if self.get_system_config("com.syberos.settings.vkp", "group", "vkp_layout") == "1":
+                return SystemNavigationType.NAVIGATION_CLASSIC_LEFT_BACK
+            else:
+                return SystemNavigationType.NAVIGATION_CLASSIC_RIGHT_BACK
+        else:
+            if self.get_system_config("com.syberos.settings.swipeSwitchApps", "group", "swipeSwitchApps_enabled") == "false":
+                return SystemNavigationType.NAVIGATION_GESTURE_WITHOUT_SSA
+            else:
+                return SystemNavigationType.NAVIGATION_GESTURE_WITH_SSA
