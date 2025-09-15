@@ -982,3 +982,100 @@ class Device(Events):
                 return SystemNavigationType.NAVIGATION_GESTURE_WITHOUT_SSA
             else:
                 return SystemNavigationType.NAVIGATION_GESTURE_WITH_SSA
+
+    def get_system_bd_time_enabled(self) -> bool:
+        """
+        获取系统卫星授时。\n
+        :return: 是否开启
+        """
+        return self.get_system_config("com.syberos.settings.locale", "group", "IS_BD_TIME") == "true"
+
+    def set_system_time_24_enabled(self, enabled: bool) -> bool:
+        """
+        设置系统时间24小时制。\n
+        :param enabled: 是否开启
+        :return: 成功返回True，否则返回False
+        """
+        return self.set_system_config("com.syberos.settings.locale", "group", "IS_24_HOUR_FORMAT", str(enabled))
+
+    def get_system_time_24_enabled(self) -> bool:
+        """
+        获取系统时间24小时制。\n
+        :return: 是否开启
+        """
+        return self.get_system_config("com.syberos.settings.locale", "group", "IS_24_HOUR_FORMAT") == "true"
+
+    def set_system_dial_pad_alert_enabled(self, enabled: bool) -> bool:
+        """
+        设置系统拨号盘提示音。\n
+        :param enabled: 是否开启
+        :return: 成功返回True，否则返回False
+        """
+        return self.set_system_config("com.syberos.profile", "common", "dialpad.alert.enabled", str(enabled))
+
+    def get_system_dial_pad_alert_enabled(self) -> bool:
+        """
+        获取系统拨号盘提示音。\n
+        :return: 是否开启
+        """
+        return self.get_system_config("com.syberos.profile", "common", "dialpad.alert.enabled") == "true"
+
+    def set_system_screen_lock_alert_enabled(self, enabled: bool) -> bool:
+        """
+        设置系统锁屏提示音。\n
+        :param enabled: 是否开启
+        :return: 成功返回True，否则返回False
+        """
+        return self.set_system_config("com.syberos.profile", "common", "screen-lock.alert.enabled", str(enabled))
+
+    def get_system_screen_lock_alert_enabled(self) -> bool:
+        """
+        获取系统锁屏提示音。\n
+        :return: 是否开启
+        """
+        return self.get_system_config("com.syberos.profile", "common", "screen-lock.alert.enabled") == "true"
+
+    def set_system_screen_unlock_vibrate_enabled(self, enabled: bool) -> bool:
+        """
+        设置系统解锁震动。\n
+        :param enabled: 是否开启
+        :return: 成功返回True，否则返回False
+        """
+        return self.set_system_config("com.syberos.profile", "common", "screen-unlock.vibrate.enabled", str(enabled))
+
+    def get_system_screen_unlock_vibrate_enabled(self) -> bool:
+        """
+        获取系统解锁震动。\n
+        :return: 是否开启
+        """
+        return self.get_system_config("com.syberos.profile", "common", "screen-unlock.vibrate.enabled") == "true"
+
+    def set_system_touch_alert_enabled(self, enabled: bool) -> bool:
+        """
+        设置系统虚拟按键提示音。\n
+        :param enabled: 是否开启
+        :return: 成功返回True，否则返回False
+        """
+        return self.set_system_config("com.syberos.profile", "common", "touch.alert.enabled", str(enabled))
+
+    def get_system_touch_alert_enabled(self) -> bool:
+        """
+        获取系统虚拟按键提示音。\n
+        :return: 是否开启
+        """
+        return self.get_system_config("com.syberos.profile", "common", "touch.alert.enabled") == "true"
+
+    def set_system_touch_vibrate_enabled(self, enabled: bool) -> bool:
+        """
+        设置系统虚拟按键震动。\n
+        :param enabled: 是否开启
+        :return: 成功返回True，否则返回False
+        """
+        return self.set_system_config("com.syberos.profile", "common", "touch.vibrate.enabled", str(enabled))
+
+    def get_system_touch_vibrate_enabled(self) -> bool:
+        """
+        获取系统虚拟按键震动。\n
+        :return: 是否开启
+        """
+        return self.get_system_config("com.syberos.profile", "common", "touch.vibrate.enabled") == "true"
