@@ -256,6 +256,12 @@ class Device(Events):
         mp_queue.put({'type': 1})
 
     @staticmethod
+    def __reply_status_check(reply):
+        if reply.status == 200:
+            return True
+        return False
+
+    @staticmethod
     def conn_phantomjs_after():
         mp_queue.put({'type': 0})
 
