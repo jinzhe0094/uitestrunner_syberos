@@ -1085,3 +1085,28 @@ class Device(Events):
         :return: 是否开启
         """
         return self.get_system_config("com.syberos.profile", "common", "touch.vibrate.enabled") == "true"
+
+    def set_font_ratio(self, ratio: FontRatio) -> bool:
+        """
+        设置字体比例。\n
+        :param ratio: 字体比例
+        :return: 成功返回True，否则返回False
+        """
+        return self.set_system_config("com.syberos.settings", "group", "font_size_ratio", str(ratio.value))
+
+    def get_font_ratio(self) -> FontRatio:
+        """
+        获取字体比例。\n
+        :return: 字体比例
+        """
+        ratio = self.get_system_config("com.syberos.settings", "group", "font_size_ratio")
+        if ratio == FontRatio.FONT_RATIO_SMALL.value:
+            return FontRatio.FONT_RATIO_SMALL
+        elif ratio == FontRatio.FONT_RATIO_STANDARD.value:
+            return FontRatio.FONT_RATIO_STANDARD
+        elif ratio == FontRatio.FONT_RATIO_LARGE.value:
+            return FontRatio.FONT_RATIO_LARGE
+        elif ratio == FontRatio.FONT_RATIO_HUGE.value:
+            return FontRatio.FONT_RATIO_HUGE
+        else:
+            return FontRatio.UNKNOWN

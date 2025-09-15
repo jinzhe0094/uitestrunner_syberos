@@ -327,3 +327,19 @@ class SystemNavigationType(enum.Enum):
     NAVIGATION_CLASSIC_RIGHT_BACK = 1
     NAVIGATION_GESTURE_WITH_SSA = 2
     NAVIGATION_GESTURE_WITHOUT_SSA = 3
+
+
+class FontRatio(enum.Enum):
+    """
+    字体比例。\n
+    :ivar UNKNOWN: 未知
+    :ivar FONT_RATIO_SMALL: 小
+    :ivar FONT_RATIO_STANDARD: 标准
+    :ivar FONT_RATIO_LARGE: 大
+    :ivar FONT_RATIO_HUGE: 超大
+    """
+    UNKNOWN = -1
+    FONT_RATIO_SMALL = 0.85
+    FONT_RATIO_STANDARD = 1.0
+    FONT_RATIO_LARGE = 1.15
+    FONT_RATIO_HUGE = 1.3
