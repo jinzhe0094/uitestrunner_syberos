@@ -1092,6 +1092,8 @@ class Device(Events):
         :param ratio: 字体比例
         :return: 成功返回True，否则返回False
         """
+        if ratio == FontRatio.UNKNOWN:
+            return False
         return self.set_system_config("com.syberos.settings", "group", "font_size_ratio", str(ratio.value))
 
     def get_font_ratio(self) -> FontRatio:
@@ -1110,3 +1112,27 @@ class Device(Events):
             return FontRatio.FONT_RATIO_HUGE
         else:
             return FontRatio.UNKNOWN
+
+    def set_system_language(self, language: SystemLanguage) -> bool:
+        """
+        设置系统语言。\n
+        :param language: 系统语言
+        :return: 语言设置成功返回True，否则返回False
+        """
+        if language == SystemLanguage.UNKNOWN:
+            return False
+        r = self.set_system_config("com.syberos.settings.locale", "group", "SYSTEM_LANGUAGE", str(language.value))
+        self.close("com.syberos.settings", "settings")
+        return r
+
+    def get_system_language(self) -> SystemLanguage:
+        """
+        获取系统语言。\n
+        :return: 系统语言
+        """
+        language = self.get_system_config("com.syberos.settings.locale", "group", "SYSTEM_LANGUAGE")
+        if language == SystemLanguage.ENGLISH.value:
+            return SystemLanguage.ENGLISH
+        elif language == SystemLanguage.CHINESE_SIMPLIFIED.value:
+            return SystemLanguage.CHINESE_SIMPLIFIED
+        return SystemLanguage.UNKNOWN

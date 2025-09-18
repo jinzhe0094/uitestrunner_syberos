@@ -343,3 +343,15 @@ class FontRatio(enum.Enum):
     FONT_RATIO_STANDARD = 1.0
     FONT_RATIO_LARGE = 1.15
     FONT_RATIO_HUGE = 1.3
+
+
+class SystemLanguage(enum.Enum):
+    """
+    系统语言。\n
+    :ivar UNKNOWN: 未知
+    :ivar CHINESE_SIMPLIFIED: 简体中文
+    :ivar ENGLISH: 英文
+    """
+    UNKNOWN = -1
+    CHINESE_SIMPLIFIED = "zh_CN"
+    ENGLISH = "en_US"
