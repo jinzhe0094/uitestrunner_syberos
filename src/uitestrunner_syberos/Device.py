@@ -631,7 +631,10 @@ class Device(Events):
         _fi = self.device.get_framework_info()
         if _fi != {} and _fi['version_build'] < 241219:
             return []
-        return str(self.device.con.get(path="getPhoneNumbers").read(), 'utf-8').replace("+86", "").split(",")
+        res = str(self.device.con.get(path="getPhoneNumbers").read(), 'utf-8').replace("+86", "")
+        if res == "":
+            return []
+        return res.split(",")
 
     def get_topmost_info(self) -> dict:
         """
