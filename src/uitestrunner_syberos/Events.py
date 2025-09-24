@@ -791,6 +791,7 @@ class Events:
         self.device.refresh_layout()
         self.device.con.get(path="launchApp", args="sopid=" + sopid + "&uiappid=" + uiappid + "&androidapp="
                                                    + str(int(syberdroid)))
+        sleep(1)
         if timeout is None:
             timeout = self.device.default_timeout
         die_time = int(time.time()) + timeout
