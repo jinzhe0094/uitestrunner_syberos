@@ -1139,3 +1139,18 @@ class Device(Events):
         elif language == SystemLanguage.CHINESE_SIMPLIFIED.value:
             return SystemLanguage.CHINESE_SIMPLIFIED
         return SystemLanguage.UNKNOWN
+
+    def set_dark_mode(self, enabled: bool) -> bool:
+        """
+        设置深色模式。\n
+        :param enabled: 是否开启
+        :return: 语言设置成功返回True，否则返回False
+        """
+        return self.set_system_config("com.syberos.settings.lightdarkmode", "group", "SYS_THEME_MODE_CURRENT_NAME", "dark" if enabled else "light")
+
+    def get_dark_mode(self) -> bool:
+        """
+        获取深色模式。\n
+        :return: 是否开启
+        """
+        return self.get_system_config("com.syberos.settings.lightdarkmode", "group", "SYS_THEME_MODE_CURRENT_NAME") == "dark"
