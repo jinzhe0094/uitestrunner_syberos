@@ -177,7 +177,7 @@ class Events:
 
     def touch_down(self, point: Point, slot_id: int = 9) -> bool:
         """
-        按下屏幕指定坐标点。\n
+        touch按下。\n
         :param point: 坐标点类Point对象
         :param slot_id: 用于区分多指触摸的编号
         :return: 成功返回True，否则为False
@@ -186,16 +186,14 @@ class Events:
                                                              args="type=1&slot=" + str(slot_id) + "&id=" + str(slot_id) + "&x=" + str(int(point.x))
                                                                   + "&y=" + str(int(point.y))))
 
-    def touch_up(self, point: Point, slot_id: int = 9) -> bool:
+    def touch_up(self, slot_id: int = 9) -> bool:
         """
-        抬起屏幕指定坐标点。\n
-        :param point: 坐标点类Point对象
+        touch抬起。\n
         :param slot_id: 用于区分多指触摸的编号
         :return: 成功返回True，否则为False
         """
         return self.__reply_status_check(self.device.con.get(path="sendTouchEventPWithUInput",
-                                                             args="type=0&slot=" + str(slot_id) + "&id=" + str(slot_id) + "&x=" + str(int(point.x))
-                                                                  + "&y=" + str(int(point.y))))
+                                                             args="type=0&slot=" + str(slot_id) + "&id=0&x=0&y=0"))
 
     def drag(self, p1: Point, p2: Point, delay: int = 1) -> bool:
         """
