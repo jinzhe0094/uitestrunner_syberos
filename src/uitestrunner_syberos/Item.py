@@ -1036,25 +1036,4 @@ class Item:
         :return: 对比值，值越小越相似
         """
         self.__refresh_node()
-        current_pic_base64 = self.grab_image_to_base64()
-        if current_pic_base64 == "" or pic == "":
-            return 999999.9
-        current_pic = Image.open(BytesIO(base64.b64decode(current_pic_base64)))
-        target_pic = Image.open(BytesIO(base64.b64decode(pic)))
-        if scale:
-            cw, ch = current_pic.size
-            tw, th = target_pic.size
-            if cw > tw:
-                nw = tw
-            else:
-                nw = cw
-            if ch > th:
-                nh = th
-            else:
-                nh = ch
-            current_pic = current_pic.resize((nw, nh))
-            target_pic = target_pic.resize((nw, nh))
-        h1 = current_pic.histogram()
-        h2 = target_pic.histogram()
-        result = math.sqrt(reduce(operator.add, list(map(lambda a, b: (a - b) ** 2, h1, h2))) / len(h1))
-        return result
+        return self.device.contrast_picture_from_base64(pic, self.grab_image_to_base64(), scale)

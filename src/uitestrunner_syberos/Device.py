@@ -43,6 +43,8 @@ from pathlib import Path
 import requests
 import json
 from urllib.parse import quote_plus
+import operator
+from functools import reduce
 
 
 main_conn, watcher_conn = Pipe()
@@ -1154,3 +1156,34 @@ class Device(Events):
         :return: 是否开启
         """
         return self.get_system_config("com.syberos.settings.lightdarkmode", "group", "SYS_THEME_MODE_CURRENT_NAME") == "dark"
+
+    @staticmethod
+    def contrast_picture_from_base64(pic1: str, pic2: str, scale: bool = False) -> float:
+        """
+        比对两张base64字符串格式的图片。\n
+        :param pic1: 第一张图片
+        :param pic2: 第二张图片
+        :param scale: 对比之前是否通过缩放来统一二者尺寸，默认为否
+        :return: 对比值，值越小越相似
+        """
+        if pic1 == "" or pic2 == "":
+            return 999999.9
+        image_1 = Image.open(io.BytesIO(base64.b64decode(pic1)))
+        image_2 = Image.open(io.BytesIO(base64.b64decode(pic2)))
+        if scale:
+            cw, ch = image_1.size
+            tw, th = image_2.size
+            if cw > tw:
+                nw = tw
+            else:
+                nw = cw
+            if ch > th:
+                nh = th
+            else:
+                nh = ch
+            image_1 = image_1.resize((nw, nh))
+            image_2 = image_2.resize((nw, nh))
+        h1 = image_1.histogram()
+        h2 = image_2.histogram()
+        result = math.sqrt(reduce(operator.add, list(map(lambda a, b: (a - b) ** 2, h1, h2))) / len(h1))
+        return result
