@@ -985,6 +985,7 @@ class Item:
         :return: 成功返回True，否则为False
         """
         self.click()
+        sleep(1)
         return self.device.submit_string(text)
 
     def grab_image_to_base64(self) -> str:
