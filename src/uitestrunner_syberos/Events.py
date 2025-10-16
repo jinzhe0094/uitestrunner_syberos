@@ -992,7 +992,7 @@ class Events:
         :return: 成功返回True，否则为False
         """
         return self.__reply_status_check(
-            self.device.con.get(path="setAutoBrightness", args="enable=" + str(enable)))
+            self.device.con.get(path="setAutoBrightness", args="enable=" + str(int(enable))))
 
     def get_auto_brightness(self) -> bool:
         """
