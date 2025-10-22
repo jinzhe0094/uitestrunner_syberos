@@ -1157,6 +1157,31 @@ class Device(Events):
         """
         return self.get_system_config("com.syberos.settings.lightdarkmode", "group", "SYS_THEME_MODE_CURRENT_NAME") == "dark"
 
+    def set_date_format(self, fmt: SystemDateFormat) -> bool:
+        """
+        设置日期格式。\n
+        :param fmt: 日期格式
+        :return: 日期格式设置成功返回True，否则返回False
+        """
+        if format == SystemDateFormat.UNKNOWN:
+            return False
+        return self.set_system_config("com.syberos.settings.locale", "group", "DATE_FORMAT", str(fmt.value))
+
+    def get_date_format(self) -> SystemDateFormat:
+        """
+        获取日期格式。\n
+        :return: 日期格式
+        """
+        fmt = self.get_system_config("com.syberos.settings.locale", "group", "DATE_FORMAT")
+        if fmt == SystemDateFormat.DATE_FORMAT_YYYY_MM_DD.value:
+            return SystemDateFormat.DATE_FORMAT_YYYY_MM_DD
+        elif fmt == SystemDateFormat.DATE_FORMAT_MM_DD_YYYY.value:
+            return SystemDateFormat.DATE_FORMAT_MM_DD_YYYY
+        elif fmt == SystemDateFormat.DATE_FORMAT_DD_MM_YYYY.value:
+            return SystemDateFormat.DATE_FORMAT_DD_MM_YYYY
+        else:
+            return SystemDateFormat.UNKNOWN
+
     @staticmethod
     def contrast_picture_from_base64(pic1: str, pic2: str, scale: bool = False) -> float:
         """

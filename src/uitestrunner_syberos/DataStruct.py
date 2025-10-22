@@ -355,3 +355,17 @@ class SystemLanguage(enum.Enum):
     UNKNOWN = -1
     CHINESE_SIMPLIFIED = "zh_CN"
     ENGLISH = "en_US"
+
+
+class SystemDateFormat(enum.Enum):
+    """
+    系统日期格式。\n
+    :ivar UNKNOWN: 未知
+    :ivar DATE_FORMAT_YYYY_MM_DD: 年-月-日
+    :ivar DATE_FORMAT_MM_DD_YYYY: 月-日-年
+    :ivar DATE_FORMAT_DD_MM_YYYY: 日-月-年
+    """
+    UNKNOWN = -1
+    DATE_FORMAT_YYYY_MM_DD = 0
+    DATE_FORMAT_MM_DD_YYYY = 1
+    DATE_FORMAT_DD_MM_YYYY = 2
