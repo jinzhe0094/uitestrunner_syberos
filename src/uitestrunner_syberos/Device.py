@@ -971,7 +971,7 @@ class Device(Events):
             return (self.set_system_config("com.syberos.settings.vkp", "group", "vkp_visible", "true")
                     and self.set_system_config("com.syberos.settings.vkp", "group", "vkp_layout", "0"))
         elif snt == SystemNavigationType.NAVIGATION_GESTURE_WITH_SSA:
-            return (self.set_system_config("com.syberos.settings.vkp", "group", "vkp_visible", "true")
+            return (self.set_system_config("com.syberos.settings.vkp", "group", "vkp_visible", "false")
                     and self.set_system_config("com.syberos.settings.swipeSwitchApps", "group", "swipeSwitchApps_enabled", "true"))
         elif snt == SystemNavigationType.NAVIGATION_GESTURE_WITHOUT_SSA:
             return (self.set_system_config("com.syberos.settings.vkp", "group", "vkp_visible", "false")
