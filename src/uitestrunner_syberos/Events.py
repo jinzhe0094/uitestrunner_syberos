@@ -868,8 +868,7 @@ class Events:
         _fi = self.device.get_framework_info()
         if syberdroid and (_fi == {} or not _fi['syberdroid']):
             return False
-        return self.__reply_status_check(
-            self.device.con.get(path="appIsRunning", args="sopid=" + sopid + "&androidapp=" + str(int(syberdroid))))
+        return bool(int(str(self.device.con.get(path="appIsRunning", args="sopid=" + sopid + "&androidapp=" + str(int(syberdroid))).read(), 'utf-8')))
 
     def is_topmost(self, sopid: str, syberdroid: bool = False) -> bool:
         """
