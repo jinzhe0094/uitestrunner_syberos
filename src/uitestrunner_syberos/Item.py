@@ -976,7 +976,7 @@ class Item:
         :param delay: 起始点长按时间，默认1秒
         :return: 成功返回True，否则为False
         """
-        return self.device.drag(Point(self.x(), self.y()), p, delay)
+        return self.device.drag(Point(self.center_x_to_global(), self.center_y_to_global()), p, delay)
 
     def submit_string(self, text: str) -> bool:
         """
