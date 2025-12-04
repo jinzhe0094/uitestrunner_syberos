@@ -45,6 +45,9 @@ import json
 from urllib.parse import quote_plus
 import operator
 from functools import reduce
+import numpy as np
+import cv2
+from io import BytesIO
 
 
 main_conn, watcher_conn = Pipe()
@@ -1190,23 +1193,39 @@ class Device(Events):
         :return: 对比值，值越小越相似
         """
         if pic1 == "" or pic2 == "":
-            return 999999.9
-        image_1 = Image.open(io.BytesIO(base64.b64decode(pic1)))
-        image_2 = Image.open(io.BytesIO(base64.b64decode(pic2)))
+            return 0.0
+        image_1 = Image.open(BytesIO(base64.b64decode(pic1)))
+        if image_1.mode == "RGBA":
+            image_1 = image_1.convert("RGB")
+        image_1 = np.array(image_1)
+        image_1 = image_1[:, :, ::-1].copy()
+
+        image_2 = Image.open(BytesIO(base64.b64decode(pic2)))
+        if image_2.mode == "RGBA":
+            image_2 = image_2.convert("RGB")
+        image_2 = np.array(image_2)
+        image_2 = image_2[:, :, ::-1].copy()
+
         if scale:
-            cw, ch = image_1.size
-            tw, th = image_2.size
-            if cw > tw:
-                nw = tw
-            else:
-                nw = cw
-            if ch > th:
-                nh = th
-            else:
-                nh = ch
-            image_1 = image_1.resize((nw, nh))
-            image_2 = image_2.resize((nw, nh))
-        h1 = image_1.histogram()
-        h2 = image_2.histogram()
-        result = math.sqrt(reduce(operator.add, list(map(lambda a, b: (a - b) ** 2, h1, h2))) / len(h1))
-        return result
+            h1, w1 = image_1.shape
+            h2, w2 = image_2.shape
+            scale_num = min(w1 / w2, h1 / h2) if w2 > w1 or h2 > h1 else 1.0
+            new_w = int(w2 * scale_num)
+            new_h = int(h2 * scale_num)
+            image_2 = cv2.resize(image_2, (new_w, new_h))
+
+        sift = cv2.SIFT_create()
+        kp1, des1 = sift.detectAndCompute(image_1, None)
+        kp2, des2 = sift.detectAndCompute(image_2, None)
+        index_params = dict(algorithm=1, trees=5)
+        search_params = dict(checks=50)
+
+        flann = cv2.FlannBasedMatcher(index_params, search_params)
+        matches = flann.knnMatch(des1, des2, k=2)
+
+        good_matches = []
+        for m, n in matches:
+            if m.distance < 0.7 * n.distance:
+                good_matches.append(m)
+
+        return -(len(good_matches) / min(len(des1), len(des2)))

@@ -1008,26 +1008,37 @@ class Item:
         self.__refresh_node()
         current_pic_base64 = self.grab_image_to_base64()
         if current_pic_base64 == "":
-            return 999999.9
+            return 0.0
         current_pic = Image.open(BytesIO(base64.b64decode(current_pic_base64)))
-        target_pic = Image.open(path)
+        if current_pic.mode == "RGBA":
+            current_pic = current_pic.convert("RGB")
+        current_pic = np.array(current_pic)
+        current_pic = current_pic[:, :, ::-1].copy()
+        target_pic = cv2.imread(path)
+
         if scale:
-            cw, ch = current_pic.size
-            tw, th = target_pic.size
-            if cw > tw:
-                nw = tw
-            else:
-                nw = cw
-            if ch > th:
-                nh = th
-            else:
-                nh = ch
-            current_pic = current_pic.resize((nw, nh))
-            target_pic = target_pic.resize((nw, nh))
-        h1 = current_pic.histogram()
-        h2 = target_pic.histogram()
-        result = math.sqrt(reduce(operator.add, list(map(lambda a, b: (a - b) ** 2, h1, h2))) / len(h1))
-        return result
+            h1, w1 = current_pic.shape
+            h2, w2 = target_pic.shape
+            scale_num = min(w1/w2, h1/h2) if w2 > w1 or h2 > h1 else 1.0
+            new_w = int(w2 * scale_num)
+            new_h = int(h2 * scale_num)
+            target_pic = cv2.resize(target_pic, (new_w, new_h))
+
+        sift = cv2.SIFT_create()
+        kp1, des1 = sift.detectAndCompute(current_pic, None)
+        kp2, des2 = sift.detectAndCompute(target_pic, None)
+        index_params = dict(algorithm=1, trees=5)
+        search_params = dict(checks=50)
+
+        flann = cv2.FlannBasedMatcher(index_params, search_params)
+        matches = flann.knnMatch(des1, des2, k=2)
+
+        good_matches = []
+        for m, n in matches:
+            if m.distance < 0.7 * n.distance:
+                good_matches.append(m)
+
+        return -(len(good_matches) / min(len(des1), len(des2)))
 
     def contrast_picture_from_base64(self, pic: str, scale: bool = False) -> float:
         """
