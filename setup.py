@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='uitestrunner_syberos',
-    version='2.19.0',
+    version='2.19.1',
     author='Jinzhe Wang',
     description='A ui automated testing tool for SyberOS',
     long_description=open('README.md', 'r').read(),
@@ -54,5 +54,5 @@ setup(
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.6, <=3.9"
+    python_requires=">=3.6, <=3.12"
 )
