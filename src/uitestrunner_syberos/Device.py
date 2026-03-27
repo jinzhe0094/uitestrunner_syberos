@@ -44,6 +44,8 @@ import json
 from urllib.parse import quote_plus
 import operator
 from functools import reduce
+import numpy as np
+import cv2
 
 
 main_conn, watcher_conn = Pipe()
@@ -55,6 +57,158 @@ mp_queue.cancel_join_thread()
 pm_queue.cancel_join_thread()
 watcher_process_list = []
 phantomjs_port = 0
+
+
+def compute_ssim(img1: np.ndarray, img2: np.ndarray) -> float:
+    """
+    计算结构相似性指数SSIM
+    """
+    c1 = (0.01 * 255) ** 2
+    c2 = (0.03 * 255) ** 2
+
+    img1 = img1.astype(np.float64)
+    img2 = img2.astype(np.float64)
+
+    kernel = cv2.getGaussianKernel(11, 1.5)
+    window = np.outer(kernel, kernel.T)
+
+    mu1 = cv2.filter2D(img1, -1, window)
+    mu2 = cv2.filter2D(img2, -1, window)
+
+    mu1_sq = mu1 ** 2
+    mu2_sq = mu2 ** 2
+    mu1_mu2 = mu1 * mu2
+
+    sigma1_sq = cv2.filter2D(img1 ** 2, -1, window) - mu1_sq
+    sigma2_sq = cv2.filter2D(img2 ** 2, -1, window) - mu2_sq
+    sigma12 = cv2.filter2D(img1 * img2, -1, window) - mu1_mu2
+
+    ssim_map = ((2 * mu1_mu2 + c1) * (2 * sigma12 + c2)) / ((mu1_sq + mu2_sq + c1) * (sigma1_sq + sigma2_sq + c2))
+
+    return float(np.mean(ssim_map))
+
+
+def extract_texture_features(img: np.ndarray) -> np.ndarray:
+    """
+    提取纹理特征（对颜色反转不敏感）
+
+    Args:
+        img: 输入图片
+    """
+    if len(img.shape) == 3:
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = img
+
+    grad_x = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
+    grad_y = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
+    magnitude = np.sqrt(grad_x ** 2 + grad_y ** 2)
+
+    # 归一化
+    if magnitude.max() > 0:
+        magnitude = (magnitude - magnitude.min()) / (magnitude.max() - magnitude.min()) * 255
+
+    return magnitude.astype(np.uint8)
+
+
+def calculate_similarity(img1: np.ndarray, img2: np.ndarray, texture_only: bool = False) -> float:
+    """
+    计算两张图片的相似度
+    """
+    if texture_only:
+        # 仅纹理对比：使用纹理特征
+        texture1 = extract_texture_features(img1)
+        texture2 = extract_texture_features(img2)
+        return compute_ssim(texture1, texture2)
+    else:
+        # 综合对比
+        if len(img1.shape) == 3 and len(img2.shape) == 3:
+            # 彩色图片：分别计算每个通道
+            channels = []
+            for i in range(3):
+                ssim_val = compute_ssim(img1[:, :, i], img2[:, :, i])
+                channels.append(ssim_val)
+            return float(np.mean(channels))
+        else:
+            # 灰度图
+            return compute_ssim(img1, img2)
+
+
+def resize_preserve_aspect(img: np.ndarray, target_size: int, by_width: bool = True) -> np.ndarray:
+    """
+    保持宽高比缩放图片
+    """
+    h, w = img.shape[:2]
+
+    if by_width:
+        scale = target_size / w
+        new_w = target_size
+        new_h = int(h * scale)
+    else:
+        scale = target_size / h
+        new_h = target_size
+        new_w = int(w * scale)
+
+    return cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_CUBIC)
+
+
+def compare_images(img1: cv2.typing.MatLike, img2: cv2.typing.MatLike, texture_only: bool = False, scale_by_width: bool = True, enable_scaling: bool = True) -> float:
+    """
+    比较两张图片，返回最大相似度和最佳偏移位置
+
+    Args:
+        img1: 图片1
+        img2: 图片2
+        texture_only: True=仅比较纹理，False=综合比较
+        scale_by_width: True=按宽度缩放，False=按高度缩放
+        enable_scaling: True=启用缩放，False=不缩放
+
+    Returns:
+        相似度
+    """
+    original_h1, original_w1 = img1.shape[:2]
+    original_h2, original_w2 = img2.shape[:2]
+
+    if enable_scaling:
+        # 启用缩放：大尺寸向小尺寸靠拢
+        if scale_by_width:
+            target_width = min(original_w1, original_w2)
+            img1 = resize_preserve_aspect(img1, target_width, by_width=True)
+            img2 = resize_preserve_aspect(img2, target_width, by_width=True)
+        else:
+            target_height = min(original_h1, original_h2)
+            img1 = resize_preserve_aspect(img1, target_height, by_width=False)
+            img2 = resize_preserve_aspect(img2, target_height, by_width=False)
+
+    h1, w1 = img1.shape[:2]
+    h2, w2 = img2.shape[:2]
+
+    # 确定基础图片和滑动图片（较大的图片作为基础）
+    if h1 * w1 >= h2 * w2:
+        base_img, slide_img = img1, img2
+        base_h, base_w = h1, w1
+        slide_h, slide_w = h2, w2
+    else:
+        base_img, slide_img = img2, img1
+        base_h, base_w = h2, w2
+        slide_h, slide_w = h1, w1
+
+    # 检查是否有重叠区域
+    if base_h < slide_h or base_w < slide_w:
+        return 0.0
+
+    # 遍历所有可能的重叠位置
+    max_similarity = -1
+
+    for y in range(0, base_h - slide_h + 1):
+        for x in range(0, base_w - slide_w + 1):
+            base_region = base_img[y:y + slide_h, x:x + slide_w]
+            similarity = calculate_similarity(base_region, slide_img, texture_only)
+
+            if similarity > max_similarity:
+                max_similarity = similarity
+
+    return max_similarity
 
 
 def get_free_port():
@@ -1182,32 +1336,42 @@ class Device(Events):
             return SystemDateFormat.UNKNOWN
 
     @staticmethod
-    def contrast_picture_from_base64(pic1: str, pic2: str, scale: bool = False) -> float:
+    def contrast_picture_from_base64(pic1: str, pic2: str, scale: bool = False, texture_only: bool = False) -> float:
         """
         比对两张base64字符串格式的图片。\n
-        :param pic1: 第一张图片
-        :param pic2: 第二张图片
-        :param scale: 对比之前是否通过缩放来统一二者尺寸，默认为否
+        :param pic1: 第一张图片base64
+        :param pic2: 第二张图片base64
+        :param scale: 对比之前是否通过缩放来统一二者的长或宽，默认为否
+        :param texture_only: 只对比纹理，默认为否
         :return: 对比值，值越小越相似
         """
         if pic1 == "" or pic2 == "":
-            return 999999.9
-        image_1 = Image.open(io.BytesIO(base64.b64decode(pic1)))
-        image_2 = Image.open(io.BytesIO(base64.b64decode(pic2)))
-        if scale:
-            cw, ch = image_1.size
-            tw, th = image_2.size
-            if cw > tw:
-                nw = tw
-            else:
-                nw = cw
-            if ch > th:
-                nh = th
-            else:
-                nh = ch
-            image_1 = image_1.resize((nw, nh))
-            image_2 = image_2.resize((nw, nh))
-        h1 = image_1.histogram()
-        h2 = image_2.histogram()
-        result = math.sqrt(reduce(operator.add, list(map(lambda a, b: (a - b) ** 2, h1, h2))) / len(h1))
-        return result
+            return 1.0
+
+        img_data1 = base64.b64decode(pic1)
+        np_arr1 = np.frombuffer(img_data1, np.uint8)
+        img1 = cv2.imdecode(np_arr1, cv2.IMREAD_COLOR)
+
+        img_data2 = base64.b64decode(pic2)
+        np_arr2 = np.frombuffer(img_data2, np.uint8)
+        img2 = cv2.imdecode(np_arr2, cv2.IMREAD_COLOR)
+
+        return 1.0 - max(compare_images(img1, img2, texture_only, True, scale), compare_images(img1, img2, texture_only, False, scale))
+
+    @staticmethod
+    def contrast_picture(pic1: str, pic2: str, scale: bool = False, texture_only: bool = False) -> float:
+        """
+        比对两张base64字符串格式的图片。\n
+        :param pic1: 第一张图片路径
+        :param pic2: 第二张图片路径
+        :param scale: 对比之前是否通过缩放来统一二者的长或宽，默认为否
+        :param texture_only: 只对比纹理，默认为否
+        :return: 对比值，值越小越相似
+        """
+        if pic1 == "" or pic2 == "":
+            return 1.0
+
+        img1 = cv2.imread(pic1)
+        img2 = cv2.imread(pic2)
+
+        return 1.0 - max(compare_images(img1, img2, texture_only, True, scale), compare_images(img1, img2, texture_only, False, scale))

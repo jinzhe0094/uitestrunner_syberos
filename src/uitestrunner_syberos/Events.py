@@ -32,6 +32,7 @@ class Events:
 
     def __init__(self, d):
         self.device = d
+        self.__stay_notify_list = {}
 
     @staticmethod
     def __reply_status_check(reply):
@@ -1247,3 +1248,60 @@ class Events:
             return False
         return self.__reply_status_check(self.device.con.get(path="disableAllPermissions",
                                                              args="sopid=" + sopid + "&androidapp=" + str(int(syberdroid))))
+
+    def send_notification(self, sopid: str = None, uiappid: str = None, appname: str = None, title: str = None, subtitle: str = None, icon: str = None, marqueetext: str = None, stay: bool = False) -> str:
+        """
+        发送通知。\n
+        :param sopid: 应用sopid
+        :param uiappid: 应用uiappid
+        :param appname: 应用名称
+        :param title: 通知标题
+        :param subtitle: 通知副标题
+        :param icon: 通知图标路径
+        :param marqueetext: 通知滚动文字
+        :param stay: 是否常驻
+        :return: 通知ID
+        """
+        _fi = self.device.get_framework_info()
+        if _fi != {} and _fi['version_build'] < 260325:
+            return ""
+        arg = []
+        sop_id = "guiautotest"
+        if sopid and stay:
+            sop_id = sopid
+            arg.append("sopid=" + sop_id)
+            arg.append("stay")
+        elif stay:
+            arg.append("stay")
+        elif stay:
+            arg.append("sopid=")
+        if uiappid:
+            arg.append("uiappid=" + uiappid)
+        if appname:
+            arg.append("appname=" + urllib.parse.quote(appname))
+        if title:
+            arg.append("title=" + urllib.parse.quote(title))
+        if subtitle:
+            arg.append("subtitle=" + urllib.parse.quote(subtitle))
+        if icon:
+            arg.append("icon=" + urllib.parse.quote(icon))
+        if marqueetext:
+            arg.append("marqueetext=" + urllib.parse.quote(marqueetext))
+        arg_str = "&".join(arg)
+        update_id = str(self.device.con.get(path="sendNotification", args=arg_str).read(), 'utf-8')
+        if stay:
+            self.__stay_notify_list[update_id] = sop_id
+        return update_id
+
+    def remove_notification(self, updateid: str) -> bool:
+        """
+        移除通知。\n
+        :param updateid: 通知ID
+        :return: 移除成功返回True，否则为False
+        """
+        _fi = self.device.get_framework_info()
+        if _fi != {} and _fi['version_build'] < 260325:
+            return False
+        if updateid in self.__stay_notify_list:
+            return bool(int(self.device.con.get(path="removeNotification", args="update_id=" + updateid + "&sopid=" + self.__stay_notify_list[updateid]).read()))
+        return bool(int(self.device.con.get(path="removeNotification", args="update_id=" + updateid).read()))

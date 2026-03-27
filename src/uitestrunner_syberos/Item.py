@@ -31,6 +31,7 @@ from .DataStruct import *
 import operator
 from functools import reduce
 from . import Device
+from .Device import compare_images
 from typing import List, Dict
 
 
@@ -997,42 +998,33 @@ class Item:
                                                 self.__attributes["width"], self.__attributes["height"],
                                                 self.__attributes["rotation"], self.__attributes["scale"])
 
-    def contrast_picture(self, path: str, scale: bool = False) -> float:
+    def contrast_picture(self, path: str, scale: bool = False, texture_only: bool = False) -> float:
         """
         使用本地的图片文件与当前元素控件截图进行图片比对。\n
         :param path: 本地的图片路径
-        :param scale: 对比之前是否通过缩放来统一二者尺寸，默认为否
+        :param scale: 对比之前是否通过缩放来统一二者的长或宽，默认为否
+        :param texture_only: 只对比纹理，默认为否
         :return: 对比值，值越小越相似
         """
         self.__refresh_node()
         current_pic_base64 = self.grab_image_to_base64()
-        if current_pic_base64 == "":
-            return 999999.9
-        current_pic = Image.open(BytesIO(base64.b64decode(current_pic_base64)))
-        target_pic = Image.open(path)
-        if scale:
-            cw, ch = current_pic.size
-            tw, th = target_pic.size
-            if cw > tw:
-                nw = tw
-            else:
-                nw = cw
-            if ch > th:
-                nh = th
-            else:
-                nh = ch
-            current_pic = current_pic.resize((nw, nh))
-            target_pic = target_pic.resize((nw, nh))
-        h1 = current_pic.histogram()
-        h2 = target_pic.histogram()
-        result = math.sqrt(reduce(operator.add, list(map(lambda a, b: (a - b) ** 2, h1, h2))) / len(h1))
-        return result
+        if current_pic_base64 == "" or path == "":
+            return 1.0
 
-    def contrast_picture_from_base64(self, pic: str, scale: bool = False) -> float:
+        img_data1 = base64.b64decode(current_pic_base64)
+        np_arr1 = np.frombuffer(img_data1, np.uint8)
+        img1 = cv2.imdecode(np_arr1, cv2.IMREAD_COLOR)
+
+        img2 = cv2.imread(path)
+
+        return 1.0 - max(compare_images(img1, img2, texture_only, True, scale), compare_images(img1, img2, texture_only, False, scale))
+
+    def contrast_picture_from_base64(self, pic: str, scale: bool = False, texture_only: bool = False) -> float:
         """
         使用图片的base64字符串与当前元素控件截图进行图片比对。\n
         :param pic: 图片的base64字符串
-        :param scale: 对比之前是否通过缩放来统一二者尺寸，默认为否
+        :param scale: 对比之前是否通过缩放来统一二者的长或宽，默认为否
+        :param texture_only: 只对比纹理，默认为否
         :return: 对比值，值越小越相似
         """
         self.__refresh_node()
