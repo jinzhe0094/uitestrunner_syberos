@@ -316,10 +316,13 @@ class Device(Events):
         })
 
     def __del__(self):
-        main_conn.send({
-            'action': 'clear',
-            'object': str(id(self))
-        })
+        try:
+            main_conn.send({
+                'action': 'clear',
+                'object': str(id(self))
+            })
+        except (OSError, BrokenPipeError, AttributeError):
+            pass
 
     def watcher(self, name: str, is_run: bool = False) -> Watcher:
         """
