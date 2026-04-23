@@ -384,6 +384,10 @@ class RemoteConnection(object):
         :Returns:
           A dictionary with the server's parsed JSON response.
         """
+
+        import warnings
+        warnings.filterwarnings("ignore", category=ResourceWarning, message="unclosed.*socket.*")
+
         LOGGER.debug('%s %s %s' % (method, url, body))
 
         parsed_url = parse.urlparse(url)
