@@ -25,6 +25,7 @@ import ctypes
 from ctypes import *
 from subprocess import *
 from .Item import Item
+from .Item import ItemN
 from .Item import compare_images
 from .Connection import Connection
 from .Events import *
@@ -45,6 +46,7 @@ import json
 from urllib.parse import quote_plus
 import cv2
 import numpy as np
+import easyocr
 
 
 main_conn, watcher_conn = Pipe()
@@ -210,8 +212,6 @@ class Device(Events):
         self.__ocr_server = None
         if self.has_environment("OCR_SERVER"):
             self.__ocr_server = self.get_environment("OCR_SERVER")
-        else:
-            import easyocr
         self.__support_device_server = None
         if self.has_environment("SUPPORT_DEVICE_SERVER"):
             self.__support_device_server = self.get_environment("SUPPORT_DEVICE_SERVER")
@@ -616,6 +616,55 @@ class Device(Events):
                 self.xml_string = str(zlib.decompress(self.con.get(path="getLayoutXML", args="compress=1").read()[4:]), 'utf-8').replace('\x08', '')
                 self.__xml_time = time.time()
 
+    def refresh_layout_new(self) -> None:
+        """
+        刷新当前设备的UI布局信息。(新版本)\n
+        :return: 无
+        """
+        _fi = self.device.get_framework_info()
+        if _fi != {} and _fi['version_build'] < 260513:
+            return
+        if self.is_main:
+            json_string = str(self.con.get(path="getLayoutXMLNew").read(), 'utf-8')
+            json_obj = json.loads(json_string)
+            self.xml_string = '<?xml version="1.0" encoding="UTF-8"?><root>'
+            for i in range(len(json_obj)):
+                data = base64.b64decode(json_obj[i]['data'])
+                compress_size = json_obj[i]['compress_size']
+                origin_size = json_obj[i]['origin_size']
+                x = json_obj[i]['x']
+                y = json_obj[i]['y']
+                width = json_obj[i]['width']
+                height = json_obj[i]['height']
+                if compress_size != len(data):
+                    continue
+                data = zlib.decompress(data[4:])
+                if origin_size != len(data):
+                    continue
+                data = str(data, 'utf-8').replace('\x08', '')
+                self.xml_string += '<window'
+                self.xml_string += ' sopid="' + json_obj[i]['sopid']
+                self.xml_string += '" uiappid="' + json_obj[i]['uiappid']
+                self.xml_string += '" title="' + json_obj[i]['title']
+                self.xml_string += '" layerid="' + json_obj[i]['layerid']
+                self.xml_string += '" xoffset="' + str(json_obj[i]['x_offset'])
+                self.xml_string += '" yoffset="' + str(json_obj[i]['y_offset'])
+                self.xml_string += '" window_rotation="' + str(json_obj[i]['rotation'])
+                self.xml_string += '" x="' + str(x)
+                self.xml_string += '" a="' + str(x + (width / 2))
+                self.xml_string += '" d="' + str(x + (width / 2))
+                self.xml_string += '" y="' + str(y)
+                self.xml_string += '" b="' + str(y + (height / 2))
+                self.xml_string += '" g="' + str(y + (height / 2))
+                self.xml_string += '" z="' + str(json_obj[i]['z'])
+                self.xml_string += '" w="' + str(width)
+                self.xml_string += '" h="' + str(height)
+                self.xml_string += '" r="0" s="1" e="1" v="1" o="1" i="" f="0" c="1" j="0" t="" k="window' + str(i) + '">'
+                self.xml_string += data
+                self.xml_string += '</window>'
+            self.xml_string += '</root>'
+            self.__xml_time = time.time()
+
     def os_version(self) -> str:
         """
         获取SyberOS系统版本。\n
@@ -678,6 +727,15 @@ class Device(Events):
         """
         i = Item(d=self, s=sopid, xpath=xpath)
         return i
+
+    def get_item_by_xpath(self, sopid: str, xpath: str) -> ItemN:
+        """
+        获取新版元素控件实例化对象。\n
+        :param sopid: 设备应用的sopid
+        :param xpath: xpath值字符串
+        :return: ItemN对象
+        """
+        return ItemN(self, sopid, xpath)
 
     def get_text_item_list_full_screen(self, rotation: int = None) -> List[TextItemFromOcr]:
         """

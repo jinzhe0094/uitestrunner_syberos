@@ -220,12 +220,12 @@ class Orientation(enum.Enum):
     :ivar FACE_DOWN: 正面朝下
     """
     UNDEFINED = 0
-    TOP_UP = 1
-    TOP_DOWN = 2
-    LEFT_UP = 3
-    RIGHT_UP = 4
-    FACE_UP = 5
-    FACE_DOWN = 6
+    LEFT_UP = 1
+    RIGHT_UP = 2
+    TOP_DOWN = 3
+    TOP_UP = 4
+    FACE_DOWN = 5
+    FACE_UP = 6
 
 
 class PasswordType(enum.Enum):
