@@ -64,7 +64,7 @@ xml_key_map = {
     'h': 'height',
     's': 'scale',
     'r': 'rotation',
-    'e': 'enable',
+    'e': 'enabled',
     'v': 'visible',
     'o': 'opacity',
     'f': 'focus',
@@ -647,10 +647,10 @@ class Device(Events):
                     height = json_obj[i]['height']
                     if compress_size != len(data):
                         continue
-                    data = zlib.decompress(data[4:])
+                    data = zlib.decompress(data[4:]).decode('utf-8')
                     if origin_size != len(data):
                         continue
-                    data = str(data, 'utf-8').replace('\x08', '')
+                    data = data.replace('\x08', '')
                     _xml_string += '<window'
                     _xml_string += ' sopid="' + json_obj[i]['sopid']
                     _xml_string += '" uiappid="' + json_obj[i]['uiappid']
@@ -729,11 +729,7 @@ class Device(Events):
                         continue
                     if e.get('layerid') == 'LAYER_STATUSBAR' and ignore_statusbar:
                         continue
-                    if elem is not None:
-                        if int(e.get('z')) > int(elem.get('z')):
-                            elem = e
-                    else:
-                        elem = e
+                    elem = e
                 if elem is not None:
                     info['sopid'] = elem.get("sopid")
                     info['uiappid'] = elem.get("uiappid")
