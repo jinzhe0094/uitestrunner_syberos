@@ -264,6 +264,9 @@ class Device(Events):
         if self.control_host_type != Controller.ANYWHERE:
             self.webdriver = webdriver.WebDriver(command_executor='http://127.0.0.1:' + str(self.wd_port) + '/wd/hub')
         self.refresh_layout()
+        _fi = self.device.get_framework_info()
+        if _fi != {} and _fi['version_build'] < 260513:
+            exit("当前设备版本过低，请升级至最新版本！")
 
     def conn_phantomjs_before(self):
         while not pm_queue.empty():
@@ -622,58 +625,54 @@ class Device(Events):
         :return: 无
         """
         if self.is_main:
-            _fi = self.device.get_framework_info()
-            if _fi != {} and _fi['version_build'] < 260513:
-                self.xml_string = str(zlib.decompress(self.con.get(path="getLayoutXML", args="compress=1").read()[4:]), 'utf-8').replace('\x08', '')
-            else:
-                json_string = str(self.con.get(path="getLayoutXMLNew").read(), 'utf-8')
-                json_obj = json.loads(json_string)
-                _xml_string = '<?xml version="1.0" encoding="UTF-8"?><root>'
-                for i in range(len(json_obj)):
-                    data = base64.b64decode(json_obj[i]['data'])
-                    compress_size = json_obj[i]['compress_size']
-                    origin_size = json_obj[i]['origin_size']
-                    x = json_obj[i]['x']
-                    y = json_obj[i]['y']
-                    width = json_obj[i]['width']
-                    height = json_obj[i]['height']
-                    if compress_size != len(data):
-                        continue
-                    data = zlib.decompress(data[4:])
-                    if origin_size != len(data):
-                        continue
-                    data = str(data, 'utf-8').replace('\x08', '')
-                    _xml_string += '<window'
-                    _xml_string += ' sopid="' + json_obj[i]['sopid']
-                    _xml_string += '" uiappid="' + json_obj[i]['uiappid']
-                    _xml_string += '" title="' + json_obj[i]['title']
-                    _xml_string += '" layerid="' + json_obj[i]['layerid']
-                    _xml_string += '" syberdroid="' + ('1' if json_obj[i]['syberdroid'] else '0')
-                    _xml_string += '" xoffset="' + str(json_obj[i]['x_offset'])
-                    _xml_string += '" yoffset="' + str(json_obj[i]['y_offset'])
-                    _xml_string += '" window_rotation="' + str(json_obj[i]['rotation'])
-                    _xml_string += '" x="' + str(x)
-                    _xml_string += '" a="' + str(x + (width / 2))
-                    _xml_string += '" d="' + str(x + (width / 2))
-                    _xml_string += '" y="' + str(y)
-                    _xml_string += '" b="' + str(y + (height / 2))
-                    _xml_string += '" g="' + str(y + (height / 2))
-                    _xml_string += '" z="' + str(json_obj[i]['z'])
-                    _xml_string += '" w="' + str(width)
-                    _xml_string += '" h="' + str(height)
-                    _xml_string += '" r="0" s="1" e="1" v="1" o="1" i="" f="0" c="1" j="0" t="" k="window' + str(i) + '">'
-                    _xml_string += data
-                    _xml_string += '</window>'
-                _xml_string += '</root>'
-                root = ElementTree.fromstring(_xml_string)
-                for elem in root.iter():
-                    new_attrib = {}
-                    for key, value in elem.attrib.items():
-                        new_key = xml_key_map.get(key, key)
-                        new_attrib[new_key] = value
-                    elem.attrib.clear()
-                    elem.attrib.update(new_attrib)
-                self.xml_string = ElementTree.tostring(root, encoding='utf-8')
+            json_string = str(self.con.get(path="getLayoutXMLNew").read(), 'utf-8')
+            json_obj = json.loads(json_string)
+            _xml_string = '<?xml version="1.0" encoding="UTF-8"?><root>'
+            for i in range(len(json_obj)):
+                data = base64.b64decode(json_obj[i]['data'])
+                compress_size = json_obj[i]['compress_size']
+                origin_size = json_obj[i]['origin_size']
+                x = json_obj[i]['x']
+                y = json_obj[i]['y']
+                width = json_obj[i]['width']
+                height = json_obj[i]['height']
+                if compress_size != len(data):
+                    continue
+                data = zlib.decompress(data[4:])
+                if origin_size != len(data):
+                    continue
+                data = str(data, 'utf-8').replace('\x08', '')
+                _xml_string += '<window'
+                _xml_string += ' sopid="' + json_obj[i]['sopid']
+                _xml_string += '" uiappid="' + json_obj[i]['uiappid']
+                _xml_string += '" title="' + json_obj[i]['title']
+                _xml_string += '" layerid="' + json_obj[i]['layerid']
+                _xml_string += '" syberdroid="' + ('1' if json_obj[i]['syberdroid'] else '0')
+                _xml_string += '" xoffset="' + str(json_obj[i]['x_offset'])
+                _xml_string += '" yoffset="' + str(json_obj[i]['y_offset'])
+                _xml_string += '" window_rotation="' + str(json_obj[i]['rotation'])
+                _xml_string += '" x="' + str(x)
+                _xml_string += '" a="' + str(x + (width / 2))
+                _xml_string += '" d="' + str(x + (width / 2))
+                _xml_string += '" y="' + str(y)
+                _xml_string += '" b="' + str(y + (height / 2))
+                _xml_string += '" g="' + str(y + (height / 2))
+                _xml_string += '" z="' + str(json_obj[i]['z'])
+                _xml_string += '" w="' + str(width)
+                _xml_string += '" h="' + str(height)
+                _xml_string += '" r="0" s="1" e="1" v="1" o="1" i="" f="0" c="1" j="0" t="" k="window' + str(i) + '">'
+                _xml_string += data
+                _xml_string += '</window>'
+            _xml_string += '</root>'
+            root = ElementTree.fromstring(_xml_string)
+            for elem in root.iter():
+                new_attrib = {}
+                for key, value in elem.attrib.items():
+                    new_key = xml_key_map.get(key, key)
+                    new_attrib[new_key] = value
+                elem.attrib.clear()
+                elem.attrib.update(new_attrib)
+            self.xml_string = ElementTree.tostring(root, encoding='utf-8')
             self.__xml_time = time.time()
             watcher_xml_queue.put({'xml': self.xml_string, 'time': self.__xml_time})
         else:
@@ -686,55 +685,6 @@ class Device(Events):
             else:
                 self.xml_string = str(zlib.decompress(self.con.get(path="getLayoutXML", args="compress=1").read()[4:]), 'utf-8').replace('\x08', '')
                 self.__xml_time = time.time()
-
-    # def refresh_layout_new(self) -> None:
-    #     """
-    #     刷新当前设备的UI布局信息。(新版本)\n
-    #     :return: 无
-    #     """
-    #     _fi = self.device.get_framework_info()
-    #     if _fi != {} and _fi['version_build'] < 260513:
-    #         return
-    #     if self.is_main:
-    #         json_string = str(self.con.get(path="getLayoutXMLNew").read(), 'utf-8')
-    #         json_obj = json.loads(json_string)
-    #         self.xml_string = '<?xml version="1.0" encoding="UTF-8"?><root>'
-    #         for i in range(len(json_obj)):
-    #             data = base64.b64decode(json_obj[i]['data'])
-    #             compress_size = json_obj[i]['compress_size']
-    #             origin_size = json_obj[i]['origin_size']
-    #             x = json_obj[i]['x']
-    #             y = json_obj[i]['y']
-    #             width = json_obj[i]['width']
-    #             height = json_obj[i]['height']
-    #             if compress_size != len(data):
-    #                 continue
-    #             data = zlib.decompress(data[4:])
-    #             if origin_size != len(data):
-    #                 continue
-    #             data = str(data, 'utf-8').replace('\x08', '')
-    #             self.xml_string += '<window'
-    #             self.xml_string += ' sopid="' + json_obj[i]['sopid']
-    #             self.xml_string += '" uiappid="' + json_obj[i]['uiappid']
-    #             self.xml_string += '" title="' + json_obj[i]['title']
-    #             self.xml_string += '" layerid="' + json_obj[i]['layerid']
-    #             self.xml_string += '" xoffset="' + str(json_obj[i]['x_offset'])
-    #             self.xml_string += '" yoffset="' + str(json_obj[i]['y_offset'])
-    #             self.xml_string += '" window_rotation="' + str(json_obj[i]['rotation'])
-    #             self.xml_string += '" x="' + str(x)
-    #             self.xml_string += '" a="' + str(x + (width / 2))
-    #             self.xml_string += '" d="' + str(x + (width / 2))
-    #             self.xml_string += '" y="' + str(y)
-    #             self.xml_string += '" b="' + str(y + (height / 2))
-    #             self.xml_string += '" g="' + str(y + (height / 2))
-    #             self.xml_string += '" z="' + str(json_obj[i]['z'])
-    #             self.xml_string += '" w="' + str(width)
-    #             self.xml_string += '" h="' + str(height)
-    #             self.xml_string += '" r="0" s="1" e="1" v="1" o="1" i="" f="0" c="1" j="0" t="" k="window' + str(i) + '">'
-    #             self.xml_string += data
-    #             self.xml_string += '</window>'
-    #         self.xml_string += '</root>'
-    #         self.__xml_time = time.time()
 
     def os_version(self) -> str:
         """
@@ -755,9 +705,6 @@ class Device(Events):
         获取当前设备电话号码。\n
         :return: 电话号码列表
         """
-        _fi = self.device.get_framework_info()
-        if _fi != {} and _fi['version_build'] < 241219:
-            return []
         res = str(self.device.con.get(path="getPhoneNumbers").read(), 'utf-8').replace("+86", "")
         return [x for x in res.split(",") if x]
 
@@ -1070,9 +1017,6 @@ class Device(Events):
         获取设备权限列表。\n
         :return: 权限列表
         """
-        _fi = self.device.get_framework_info()
-        if _fi != {} and _fi['version_build'] < 241219:
-            return {}
         if len(self.__permissions) == 0:
             json_str = str(self.device.con.get(path="getAllPermissions").read(), 'utf-8')
             json_obj = json.loads(json_str)

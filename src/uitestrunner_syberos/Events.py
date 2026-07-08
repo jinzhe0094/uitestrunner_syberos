@@ -532,37 +532,23 @@ class Events:
             raise Exception('error: the file path format is incorrect, and the transfer folder is not supported')
         if remote_path.split("/")[len(remote_path.split("/")) - 1] == "":
             remote_path += file_name
-        _fi = self.device.get_framework_info()
-        if _fi != {} and _fi['version_build'] >= 241010:
-            header = {
-                "FilePath": remote_path,
-                "FileName": file_name,
-                "TotalSize": os.path.getsize(file_path)
-            }
-            re = True
-            with open(file_path, 'rb') as f:
-                while True:
-                    header["Start"] = str(f.tell())
-                    chunk = f.read(1024 * 1024)
-                    if not chunk:
-                        break
-                    else:
-                        re = re and bool(int(str(
-                            self.device.con.post(path="upLoadFile", headers=header, data=chunk, timeout=timeout).read(),
-                            'utf-8')))
-            return re
         header = {
-            "FileName": remote_path
+            "FilePath": remote_path,
+            "FileName": file_name,
+            "TotalSize": os.path.getsize(file_path)
         }
-        f = open(file_path, 'rb')
-        data = {'file': (file_name, f.read())}
-        f.close()
-        encode_data = encode_multipart_formdata(data)
-
-        data = encode_data[0]
-        header['Content-Type'] = encode_data[1]
-        return bool(int(str(
-            self.device.con.post(path="upLoadFile", headers=header, data=data, timeout=timeout).read(), 'utf-8')))
+        re = True
+        with open(file_path, 'rb') as f:
+            while True:
+                header["Start"] = str(f.tell())
+                chunk = f.read(1024 * 1024)
+                if not chunk:
+                    break
+                else:
+                    re = re and bool(int(str(
+                        self.device.con.post(path="upLoadFile", headers=header, data=chunk, timeout=timeout).read(),
+                        'utf-8')))
+        return re
 
     def file_exist(self, file_path: str) -> bool:
         """
@@ -819,21 +805,15 @@ class Events:
         while int(time.time()) < die_time:
             for i in range(0, 10):
                 try:
-                    self.device.refresh_layout()
-                    selector = etree.XML(self.device.xml_string.encode('utf-8'))
-                    _fi = self.device.get_framework_info()
-                    if _fi != {} and _fi['version_build'] < 241219:
-                        if selector.get("sopId") == sopid:
+                    topmost_info = self.device.get_topmost_info()
+                    if topmost_info['sopid'] == sopid:
+                        if not syberdroid or topmost_info['syberdroid']:
                             return True
                     else:
-                        if selector.get("sopId") == sopid:
-                            if not syberdroid or selector.get("androidApp") == "1":
-                                return True
-                        else:
-                            if syberdroid and selector.get("androidApp") == "1" and selector.get("sopId") == "com.android.permissioncontroller":
-                                return True
-                            if not syberdroid and selector.get("androidApp") != "1" and selector.get("sopId") == "systemui(FAKE_VALUE)":
-                                return True
+                        if syberdroid and topmost_info['syberdroid'] and topmost_info['sopid'] == "com.android.permissioncontroller":
+                            return True
+                        if not syberdroid and topmost_info['syberdroid'] and topmost_info['sopid'] == "systemui(PCL)":
+                            return True
                     break
                 except etree.XMLSyntaxError:
                     continue
@@ -1077,9 +1057,6 @@ class Events:
         :param timeout: 超时时间(单位:秒)，默认为框架超时时间
         :return: 成功返回True，否则为False
         """
-        _fi = self.device.get_framework_info()
-        if _fi != {} and _fi['version_build'] < 241225:
-            return False
         if len(password) < 8:
             return False
         to_str = "&timeout=" + str(timeout) if timeout else ""
@@ -1090,18 +1067,12 @@ class Events:
         """
         设置设备WLAN功能是否开启。
         """
-        _fi = self.device.get_framework_info()
-        if _fi != {} and _fi['version_build'] < 241225:
-            return False
         return bool(int(self.device.con.get(path="setWlanEnabled", args="enabled=" + str(int(enable))).read()))
 
     def get_wlan_enabled(self) -> bool:
         """
         获取设备WLAN功能是否开启。
         """
-        _fi = self.device.get_framework_info()
-        if _fi != {} and _fi['version_build'] < 241225:
-            return False
         return bool(int(self.device.con.get(path="getWlanEnabled").read()))
 
     def password_exists(self) -> bool:
@@ -1149,9 +1120,7 @@ class Events:
         :return: 成功返回True，否则为False
         """
         _fi = self.device.get_framework_info()
-        if _fi != {} and _fi['version_build'] < 241219:
-            return False
-        if syberdroid and (_fi == {} or not _fi['syberdroid'] or _fi['version_build'] < 250118):
+        if syberdroid and (_fi == {} or not _fi['syberdroid']):
             return False
         if perm not in self.device.permissions().keys():
             print("set_app_permission: permission not found!")
@@ -1171,9 +1140,7 @@ class Events:
         :return: 成功返回True，否则为False
         """
         _fi = self.device.get_framework_info()
-        if _fi != {} and _fi['version_build'] < 241219:
-            return False
-        if syberdroid and (_fi == {} or not _fi['syberdroid'] or _fi['version_build'] < 250118):
+        if syberdroid and (_fi == {} or not _fi['syberdroid']):
             return False
         if len(perm_list) == 0:
             print("set_app_permissions: permission list is empty!")
@@ -1195,9 +1162,7 @@ class Events:
         :return: 权限字典，key为权限名称，value为字典类型(包含中英文说明以及授权状态，当查询安卓应用时则是中文名称、说明、授权状态以及安卓标识)
         """
         _fi = self.device.get_framework_info()
-        if _fi != {} and _fi['version_build'] < 241219:
-            return {}
-        if syberdroid and (_fi == {} or not _fi['syberdroid'] or _fi['version_build'] < 250118):
+        if syberdroid and (_fi == {} or not _fi['syberdroid']):
             return {}
         json_str = str(self.device.con.get(path="getAppPermissions",
                                            args="sopid=" + sopid + "&androidapp=" + str(int(syberdroid))).read(), 'utf-8')
@@ -1212,9 +1177,7 @@ class Events:
         :return: 是否开启权限
         """
         _fi = self.device.get_framework_info()
-        if _fi != {} and _fi['version_build'] < 241219:
-            return False
-        if syberdroid and (_fi == {} or not _fi['syberdroid'] or _fi['version_build'] < 250118):
+        if syberdroid and (_fi == {} or not _fi['syberdroid']):
             return False
         return bool(int(self.device.con.get(path="checkAppPermission", args="sopid=" + sopid + "&perm=" + perm
                                                                             + "&androidapp=" + str(int(syberdroid))).read()))
@@ -1227,9 +1190,7 @@ class Events:
         :return: 成功返回True，否则为False
         """
         _fi = self.device.get_framework_info()
-        if _fi != {} and _fi['version_build'] < 241219:
-            return False
-        if syberdroid and (_fi == {} or not _fi['syberdroid'] or _fi['version_build'] < 250118):
+        if syberdroid and (_fi == {} or not _fi['syberdroid']):
             return False
         return self.__reply_status_check(self.device.con.get(path="enableAllPermissions",
                                                              args="sopid=" + sopid + "&androidapp=" + str(int(syberdroid))))
@@ -1242,9 +1203,7 @@ class Events:
         :return: 成功返回True，否则为False
         """
         _fi = self.device.get_framework_info()
-        if _fi != {} and _fi['version_build'] < 241219:
-            return False
-        if syberdroid and (_fi == {} or not _fi['syberdroid'] or _fi['version_build'] < 250118):
+        if syberdroid and (_fi == {} or not _fi['syberdroid']):
             return False
         return self.__reply_status_check(self.device.con.get(path="disableAllPermissions",
                                                              args="sopid=" + sopid + "&androidapp=" + str(int(syberdroid))))
@@ -1262,9 +1221,6 @@ class Events:
         :param stay: 是否常驻
         :return: 通知ID
         """
-        _fi = self.device.get_framework_info()
-        if _fi != {} and _fi['version_build'] < 260325:
-            return ""
         arg = []
         sop_id = "guiautotest"
         if sopid and stay:
@@ -1299,9 +1255,6 @@ class Events:
         :param updateid: 通知ID
         :return: 移除成功返回True，否则为False
         """
-        _fi = self.device.get_framework_info()
-        if _fi != {} and _fi['version_build'] < 260325:
-            return False
         if updateid in self.__stay_notify_list:
             return bool(int(self.device.con.get(path="removeNotification", args="update_id=" + updateid + "&sopid=" + self.__stay_notify_list[updateid]).read()))
         return bool(int(self.device.con.get(path="removeNotification", args="update_id=" + updateid).read()))
