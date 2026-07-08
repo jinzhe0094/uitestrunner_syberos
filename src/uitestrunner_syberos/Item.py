@@ -16,7 +16,7 @@
 import base64
 import urllib3.exceptions
 import time
-from ctypes import *
+# from ctypes import *
 import threading
 import sympy as sp
 import math
@@ -219,6 +219,7 @@ class Item:
     __html_string = ""
 
     def __init__(self, d: Device, s: str = "", xpath: str = "", node=None):
+        self.window_node = self.node
         self.rect = []
         self.__attributes = {}
         self.__absolute_xpath = ""
@@ -257,13 +258,18 @@ class Item:
         self.device.refresh_layout()
         if self.xpath != "":
             self.node = None
+            self.window_node = None
             for i in range(0, 10):
                 try:
                     selector = etree.XML(self.device.xml_string.encode('utf-8'))
                     nodes = selector.xpath(self.xpath)
-                    if len(nodes) > 0 and selector.get("sopId") == self.sopid:
-                        self.__generate_absolute_xpath(nodes[0])
-                        self.node = nodes[0]
+                    for node in nodes:
+                        window_node = node
+                        while window_node.getparent().getparent() is not None:
+                            window_node = window_node.getparent()
+                        if window_node.get("sopid") == self.sopid or self.sopid == "":
+                            self.node = node
+                            break
                     break
                 except etree.XMLSyntaxError:
                     self.device.refresh_layout()
@@ -277,9 +283,9 @@ class Item:
         if self.node.getparent() is None:
             self.__init_attribute()
             return
-        if self.node.getparent().getparent() is None:
-            self.__init_attribute()
-            return
+        self.window_node = self.node
+        while self.window_node.getparent().getparent() is not None:
+            self.window_node = self.window_node.getparent()
         self.__refresh_attribute()
 
     def __refresh_attribute(self):
@@ -304,6 +310,10 @@ class Item:
         self.__attributes["rotation"] = int(self.node.get("rotation"))
         self.__attributes["clip"] = bool(int(self.node.get("clip")))
         self.__attributes["has_contents"] = bool(int(self.node.get("hasContents")))
+        self.__attributes["layer_id"] = self.window_node.get("layerid")
+        self.__attributes["window_title"] = self.window_node.get("title")
+        self.__attributes["sop_id"] = self.window_node.get("sopid")
+        self.__attributes["ui_app_id"] = self.window_node.get("uiappid")
 
     def __init_attribute(self):
         self.__attributes["text"] = str()
@@ -327,6 +337,10 @@ class Item:
         self.__attributes["rotation"] = int()
         self.__attributes["clip"] = bool()
         self.__attributes["has_contents"] = bool()
+        self.__attributes["layer_id"] = str()
+        self.__attributes["window_title"] = str()
+        self.__attributes["sop_id"] = str()
+        self.__attributes["ui_app_id"] = str()
 
     def attributes(self, refresh: bool = False) -> Dict:
         """
@@ -681,6 +695,84 @@ class Item:
             self.__refresh_node()
         return self.__attributes["has_contents"]
 
+    def sop_id(self, refresh: bool = False) -> str:
+        """
+        获取元素控件所属进程的sopid。\n
+        :param refresh: 是否刷新布局信息(默认值False)
+        :return: sopid
+        """
+        if refresh:
+            self.__refresh_node()
+        return self.__attributes["sop_id"]
+
+    def ui_app_id(self, refresh: bool = False) -> str:
+        """
+        获取元素控件所属进程的uiappid。\n
+        :param refresh: 是否刷新布局信息(默认值False)
+        :return: uiappid
+        """
+        if refresh:
+            self.__refresh_node()
+        return self.__attributes["ui_app_id"]
+
+    def window_title(self, refresh: bool = False) -> str:
+        """
+        获取元素控件所属进程的窗口title。\n
+        :param refresh: 是否刷新布局信息(默认值False)
+        :return: 窗口title
+        """
+        if refresh:
+            self.__refresh_node()
+        return self.__attributes["window_title"]
+
+    def layer_id(self, refresh: bool = False) -> str:
+        """
+        获取元素控件所属进程的layerid。\n
+        :param refresh: 是否刷新布局信息(默认值False)
+        :return: 获取元素控件所属进程的layerid
+        """
+        if refresh:
+            self.__refresh_node()
+        return self.__attributes["layer_id"]
+
+    def __xml_to_html(self):
+        self.__html_string = ""
+        tree = xml.dom.minidom.parseString(self.device.xml_string)
+        root = tree.documentElement
+        if root.hasChildNodes():
+            self.__xml_to_html_traverse(root, 0, 0, 0, True)
+
+    def __xml_to_html_traverse(self, node: xml.dom.minidom.Element, index_z: int, x_offset: int, y_offset: int, root: bool = False):
+        for child in node.childNodes:
+            height = float(child.getAttribute("height"))
+            width = float(child.getAttribute("width"))
+            cx = float(child.getAttribute("centerXToItem"))
+            cy = float(child.getAttribute("centerYToItem"))
+            x = cx - (width / 2) - x_offset
+            y = cy - (height / 2) - y_offset
+            xo = 0
+            yo = 0
+            if root:
+                xo = float(child.getAttribute("xoffset"))
+                yo = float(child.getAttribute("yoffset"))
+            if float(child.getAttribute("opacity")) != 0 \
+                    and int(child.getAttribute("visible")) == 1 \
+                    and child.nodeName != "QQuickShaderEffectSource":
+                clip = "clip:rect(auto, auto, auto, auto);" if int(child.getAttribute("clip")) == 1 else ""
+                z = index_z + int(child.getAttribute("z"))
+                scale = child.getAttribute("scale")
+                rotation = int(child.getAttribute("rotation"))
+                if int(child.getAttribute("hasContents")) == 0:
+                    self.__html_string += "<div style=\"position:absolute;z-index:"+str(z)+";left:"+str(x)+"px;top:"+str(y)+"px;width:"+str(width)+"px;height:"+str(height)+"px;-webkit-transform:scale("+scale+") rotate("+str(rotation)+"deg);"+clip+"\">"
+                else:
+                    if child.getAttribute("tempID") == self.temp_id():
+                        self.__html_string += "<div style=\"position:absolute;z-index:"+str(z)+";left:"+str(x)+"px;top:"+str(y)+"px;width:"+str(width)+"px;height:"+str(height)+"px;-webkit-transform:scale("+scale+") rotate("+str(rotation)+"deg);"+clip+"background:#F00;\">"
+                    else:
+                        self.__html_string += "<div style=\"position:absolute;z-index:"+str(z)+";left:"+str(x)+"px;top:"+str(y)+"px;width:"+str(width)+"px;height:"+str(height)+"px;-webkit-transform:scale("+scale+") rotate("+str(rotation)+"deg);"+clip+"background:#00F;\">"
+                if child.hasChildNodes():
+                    self.__xml_to_html_traverse(child, z, xo, yo)
+                self.__html_string += "</div>"
+
     def exist(self, timeout: int = None) -> bool:
         """
         判断元素控件是否显示。\n
@@ -717,17 +809,18 @@ class Item:
                         else:
                             image = self.__img_cover(image, self.__xml_tree_traversed(n.childNodes, 1))
             else:
-                html_string = self.device.libsr.go(c_char_p(bytes(self.device.xml_string, "utf-8")),
-                                                   c_char_p(bytes(self.__attributes["temp_id"], "utf-8")),
-                                                   c_int(self.__display_width),
-                                                   c_int(self.__display_height))
+                # html_string = self.device.libsr.go(c_char_p(bytes(self.device.xml_string, "utf-8")),
+                #                                    c_char_p(bytes(self.__attributes["temp_id"], "utf-8")),
+                #                                    c_int(self.__display_width),
+                #                                    c_int(self.__display_height))
+                self.__xml_to_html()
                 if self.device.is_main:
                     self.device.conn_phantomjs_before()
                 try:
                     self.device.webdriver.get("data:text/html;charset=utf-8," +
                                               html_string_1 + str(self.__display_width) +
                                               html_string_2 + str(self.__display_height) +
-                                              html_string_3 + string_at(html_string, -1).decode('utf-8') +
+                                              html_string_3 + self.__html_string +
                                               html_string_4)
                     image = cv2.imdecode(np.frombuffer(base64.b64decode(self.device.webdriver.get_screenshot_as_base64()),
                                                        np.uint8), cv2.COLOR_RGB2BGR)
@@ -1179,333 +1272,333 @@ class Item:
         return self.device.contrast_picture_from_base64(pic, self.grab_image_to_base64(), scale)
 
 
-class ItemN(Item):
-    """
-    新版元素控件类，继承自Item,通过Device.get_item_by_xpath()接口结果返回实例化对象，不推荐单独使用。\n
-    :ivar sopid: 元素控件所在的应用sopid
-    :ivar device: 实例化的Device对象
-    :ivar node: 对应的xml节点对象
-    :ivar xpath: xpath字符串
-    """
-
-    __html_string = ""
-
-    def __init__(self, d: Device, s: str = "", xpath: str = "", node=None):
-        self.window_node = self.node
-        super().__init__(d, s, xpath, node)
-
-    def __refresh_node(self):
-        self.device.refresh_layout_new()
-        if self.xpath != "":
-            self.node = None
-            self.window_node = None
-            for i in range(0, 10):
-                try:
-                    selector = etree.XML(self.device.xml_string.encode('utf-8'))
-                    nodes = selector.xpath(self.xpath)
-                    for node in nodes:
-                        window_node = node
-                        while window_node.getparent().getparent() is not None:
-                            window_node = window_node.getparent()
-                        if window_node.get("sopid") == self.sopid or self.sopid == "":
-                            self.node = node
-                            break
-                    break
-                except etree.XMLSyntaxError:
-                    self.device.refresh_layout_new()
-                    continue
-        else:
-            self.__generate_absolute_xpath(self.node)
-            self.xpath = self.__absolute_xpath
-        if self.node is None:
-            self.__init_attribute()
-            return
-        if self.node.getparent() is None:
-            self.__init_attribute()
-            return
-        self.window_node = self.node
-        while self.window_node.getparent().getparent() is not None:
-            self.window_node = self.window_node.getparent()
-        self.__refresh_attribute()
-
-    def __init_attribute(self):
-        self.__attributes["text"] = str()
-        self.__attributes["temp_id"] = str()
-        self.__attributes["x"] = int()
-        self.__attributes["y"] = int()
-        self.__attributes["z"] = int()
-        self.__attributes["center_x_to_item"] = int()
-        self.__attributes["center_y_to_item"] = int()
-        self.__attributes["center_x_to_global"] = int()
-        self.__attributes["center_y_to_global"] = int()
-        self.__attributes["height"] = int()
-        self.__attributes["width"] = int()
-        self.__attributes["class_name"] = str()
-        self.__attributes["object_name"] = str()
-        self.__attributes["opacity"] = float()
-        self.__attributes["focus"] = bool()
-        self.__attributes["enabled"] = bool()
-        self.__attributes["visible"] = bool()
-        self.__attributes["scale"] = float()
-        self.__attributes["rotation"] = int()
-        self.__attributes["clip"] = bool()
-        self.__attributes["has_contents"] = bool()
-        self.__attributes["layer_id"] = str()
-        self.__attributes["window_title"] = str()
-        self.__attributes["sop_id"] = str()
-        self.__attributes["ui_app_id"] = str()
-
-    def __refresh_attribute(self):
-        self.__attributes["x"] = int(round(float(self.node.get("x"))))
-        self.__attributes["y"] = int(round(float(self.node.get("y"))))
-        self.__attributes["center_x_to_item"] = int(round(float(self.node.get("a"))))
-        self.__attributes["center_y_to_item"] = int(round(float(self.node.get("b"))))
-        self.__attributes["center_x_to_global"] = int(round(float(self.node.get("d"))))
-        self.__attributes["center_y_to_global"] = int(round(float(self.node.get("g"))))
-        self.__attributes["z"] = int(self.node.get("z"))
-        self.__attributes["height"] = int(round(float(self.node.get("h"))))
-        self.__attributes["width"] = int(round(float(self.node.get("w"))))
-        self.__attributes["temp_id"] = self.node.get("k")
-        self.__attributes["text"] = self.node.get("t")
-        self.__attributes["object_name"] = self.node.get("i")
-        self.__attributes["class_name"] = self.node.tag
-        self.__attributes["opacity"] = float(self.node.get("o"))
-        self.__attributes["enabled"] = bool(int(self.node.get("e")))
-        self.__attributes["visible"] = bool(int(self.node.get("v")))
-        self.__attributes["focus"] = bool(int(self.node.get("f")))
-        self.__attributes["scale"] = float(self.node.get("s"))
-        self.__attributes["rotation"] = int(self.node.get("r"))
-        self.__attributes["clip"] = bool(int(self.node.get("c")))
-        self.__attributes["has_contents"] = bool(int(self.node.get("j")))
-        self.__attributes["layer_id"] = self.window_node.get("layerid")
-        self.__attributes["window_title"] = self.window_node.get("title")
-        self.__attributes["sop_id"] = self.window_node.get("sopid")
-        self.__attributes["ui_app_id"] = self.window_node.get("uiappid")
-
-    def __xml_to_html(self):
-        self.__html_string = ""
-        tree = xml.dom.minidom.parseString(self.device.xml_string)
-        root = tree.documentElement
-        if root.hasChildNodes():
-            self.__xml_to_html_traverse(root, 0, 0, 0, True)
-
-    def __xml_to_html_traverse(self, node: xml.dom.minidom.Element, index_z: int, x_offset: int, y_offset: int, root: bool = False):
-        for child in node.childNodes:
-            height = float(child.getAttribute("h"))
-            width = float(child.getAttribute("w"))
-            cx = float(child.getAttribute("a"))
-            cy = float(child.getAttribute("b"))
-            x = cx - (width / 2) - x_offset
-            y = cy - (height / 2) - y_offset
-            xo = 0
-            yo = 0
-            if root:
-                xo = float(child.getAttribute("xoffset"))
-                yo = float(child.getAttribute("yoffset"))
-            if float(child.getAttribute("o")) != 0 \
-                    and int(child.getAttribute("v")) == 1 \
-                    and child.nodeName != "QQuickShaderEffectSource":
-                clip = "clip:rect(auto, auto, auto, auto);" if int(child.getAttribute("c")) == 1 else ""
-                z = index_z + int(child.getAttribute("z"))
-                scale = child.getAttribute("s")
-                rotation = int(child.getAttribute("r"))
-                if int(child.getAttribute("j")) == 0:
-                    self.__html_string += "<div style=\"position:absolute;z-index:"+str(z)+";left:"+str(x)+"px;top:"+str(y)+"px;width:"+str(width)+"px;height:"+str(height)+"px;-webkit-transform:scale("+scale+") rotate("+str(rotation)+"deg);"+clip+"\">"
-                else:
-                    if child.getAttribute("k") == self.temp_id():
-                        self.__html_string += "<div style=\"position:absolute;z-index:"+str(z)+";left:"+str(x)+"px;top:"+str(y)+"px;width:"+str(width)+"px;height:"+str(height)+"px;-webkit-transform:scale("+scale+") rotate("+str(rotation)+"deg);"+clip+"background:#F00;\">"
-                    else:
-                        self.__html_string += "<div style=\"position:absolute;z-index:"+str(z)+";left:"+str(x)+"px;top:"+str(y)+"px;width:"+str(width)+"px;height:"+str(height)+"px;-webkit-transform:scale("+scale+") rotate("+str(rotation)+"deg);"+clip+"background:#00F;\">"
-                if child.hasChildNodes():
-                    self.__xml_to_html_traverse(child, z, xo, yo)
-                self.__html_string += "</div>"
-
-    def __exist(self):
-        self.__refresh_node()
-        if self.node is not None \
-                and self.__attributes["visible"] \
-                and self.__attributes["opacity"] > 0 \
-                and self.__attributes["scale"] != 0 \
-                and self.__attributes["width"] > 0 \
-                and self.__attributes["height"] > 0:
-            image = []
-            if self.device.control_host_type == Controller.ANYWHERE:
-                tree = xml.dom.minidom.parseString(self.device.xml_string)
-                for node in tree.documentElement.childNodes:
-                    for n in node.childNodes:
-                        if len(image) == 0:
-                            image = self.__xml_tree_traversed(n.childNodes, 1)
-                        else:
-                            image = self.__img_cover(image, self.__xml_tree_traversed(n.childNodes, 1))
-            else:
-                self.__xml_to_html()
-                if self.device.is_main:
-                    self.device.conn_phantomjs_before()
-                try:
-                    self.device.webdriver.get("data:text/html;charset=utf-8," +
-                                              html_string_1 + str(self.__display_width) +
-                                              html_string_2 + str(self.__display_height) +
-                                              html_string_3 + self.__html_string +
-                                              html_string_4)
-                    image = cv2.imdecode(np.frombuffer(base64.b64decode(self.device.webdriver.get_screenshot_as_base64()),
-                                                       np.uint8), cv2.COLOR_RGB2BGR)
-                except (cv2.error, urllib3.exceptions.ProtocolError) as e:
-                    print(e)
-                    if self.device.is_main:
-                        self.device.conn_phantomjs_after()
-                    return []
-                if self.device.is_main:
-                    self.device.conn_phantomjs_after()
-            b, g, r = cv2.split(image)
-            if len(np.argwhere(r == 255)) > 0:
-                return np.argwhere(r == 255)
-        return []
-
-    def parent(self, refresh: bool = False) -> 'ItemN':
-        """
-        获取当前ItemN对象的父对象，如没有则返回None。\n
-        :param refresh: 是否刷新布局信息(默认值False)
-        :return: 父亲对象或None
-        """
-        if refresh:
-            self.__refresh_node()
-        if self.node is None:
-            return None
-        if self.node.getparent() is None:
-            return None
-        return ItemN(self.device, "", self.node.getparent())
-
-    def children(self, filter_condition: dict = None, refresh: bool = False) -> List['ItemN']:
-        """
-        获取当前ItemN对象的子对象列表。\n
-        :param filter_condition: 用于筛选子对象的属性条件字典
-        :param refresh: 是否刷新布局信息(默认值False)
-        :return: 子对象列表
-        """
-        if refresh:
-            self.__refresh_node()
-        children = []
-        if self.node is None:
-            return children
-        if filter_condition is not None:
-            for key in filter_condition.keys():
-                if key not in self.__attributes.keys():
-                    return children
-            for node in list(self.node):
-                i = ItemN(self.device, "", node)
-                flag = 0
-                for key in filter_condition.keys():
-                    if i.attributes()[key] == filter_condition[key]:
-                        flag += 1
-                if flag == len(filter_condition):
-                    children.append(i)
-        else:
-            for node in list(self.node):
-                children.append(Item(self.device, self.sopid, "", node))
-        return children
-
-    def previous(self, refresh: bool = False) -> 'ItemN':
-        """
-        获取当前ItemN对象的前一位兄弟对象，如没有则返回None。\n
-        :param refresh: 是否刷新布局信息(默认值False)
-        :return: 前一位兄弟对象或None
-        """
-        if refresh:
-            self.__refresh_node()
-        if self.node is None:
-            return None
-        if self.node.getparent() is None:
-            return None
-        return ItemN(self.device, "", self.node.getprevious())
-
-    def previous_by_same_tag(self, refresh: bool = False) -> 'ItemN':
-        """
-        获取当前ItemN对象的前一位同类兄弟对象，如没有则返回None。\n
-        :param refresh: 是否刷新布局信息(默认值False)
-        :return: 前一位同类兄弟对象或None
-        """
-        if refresh:
-            self.__refresh_node()
-        if self.node is None:
-            return None
-        if self.node.getparent() is None:
-            return None
-        pn = self.node.getprevious()
-        while pn is not None:
-            if pn.tag == self.node.tag:
-                return ItemN(self.device, "", pn)
-            pn = pn.getprevious()
-        return None
-
-    def next(self, refresh: bool = False) -> 'ItemN':
-        """
-        获取当前ItemN对象的后一位兄弟对象，如没有则返回None。\n
-        :param refresh: 是否刷新布局信息(默认值False)
-        :return: 后一位兄弟对象或None
-        """
-        if refresh:
-            self.__refresh_node()
-        if self.node is None:
-            return None
-        if self.node.getparent() is None:
-            return None
-        return ItemN(self.device, "", self.node.getnext())
-
-    def next_by_same_tag(self, refresh: bool = False) -> 'ItemN':
-        """
-        获取当前ItemN对象的后一位同类兄弟对象，如没有则返回None。\n
-        :param refresh: 是否刷新布局信息(默认值False)
-        :return: 后一位同类兄弟对象或None
-        """
-        if refresh:
-            self.__refresh_node()
-        if self.node is None:
-            return None
-        if self.node.getparent() is None:
-            return None
-        nn = self.node.getnext()
-        while nn is not None:
-            if nn.tag == self.node.tag:
-                return ItemN(self.device, "", nn)
-            nn = nn.getnext()
-        return None
-
-    def sop_id(self, refresh: bool = False) -> str:
-        """
-        获取元素控件所属进程的sopid。\n
-        :param refresh: 是否刷新布局信息(默认值False)
-        :return: sopid
-        """
-        if refresh:
-            self.__refresh_node()
-        return self.__attributes["sop_id"]
-
-    def ui_app_id(self, refresh: bool = False) -> str:
-        """
-        获取元素控件所属进程的uiappid。\n
-        :param refresh: 是否刷新布局信息(默认值False)
-        :return: uiappid
-        """
-        if refresh:
-            self.__refresh_node()
-        return self.__attributes["ui_app_id"]
-
-    def window_title(self, refresh: bool = False) -> str:
-        """
-        获取元素控件所属进程的窗口title。\n
-        :param refresh: 是否刷新布局信息(默认值False)
-        :return: 窗口title
-        """
-        if refresh:
-            self.__refresh_node()
-        return self.__attributes["window_title"]
-
-    def layer_id(self, refresh: bool = False) -> str:
-        """
-        获取元素控件所属进程的layerid。\n
-        :param refresh: 是否刷新布局信息(默认值False)
-        :return: 获取元素控件所属进程的layerid
-        """
-        if refresh:
-            self.__refresh_node()
-        return self.__attributes["layer_id"]
+# class ItemN(Item):
+#     """
+#     新版元素控件类，继承自Item,通过Device.get_item_by_xpath()接口结果返回实例化对象，不推荐单独使用。\n
+#     :ivar sopid: 元素控件所在的应用sopid
+#     :ivar device: 实例化的Device对象
+#     :ivar node: 对应的xml节点对象
+#     :ivar xpath: xpath字符串
+#     """
+#
+#     __html_string = ""
+#
+#     def __init__(self, d: Device, s: str = "", xpath: str = "", node=None):
+#         self.window_node = self.node
+#         super().__init__(d, s, xpath, node)
+#
+#     def __refresh_node(self):
+#         self.device.refresh_layout()
+#         if self.xpath != "":
+#             self.node = None
+#             self.window_node = None
+#             for i in range(0, 10):
+#                 try:
+#                     selector = etree.XML(self.device.xml_string.encode('utf-8'))
+#                     nodes = selector.xpath(self.xpath)
+#                     for node in nodes:
+#                         window_node = node
+#                         while window_node.getparent().getparent() is not None:
+#                             window_node = window_node.getparent()
+#                         if window_node.get("sopid") == self.sopid or self.sopid == "":
+#                             self.node = node
+#                             break
+#                     break
+#                 except etree.XMLSyntaxError:
+#                     self.device.refresh_layout()
+#                     continue
+#         else:
+#             self.__generate_absolute_xpath(self.node)
+#             self.xpath = self.__absolute_xpath
+#         if self.node is None:
+#             self.__init_attribute()
+#             return
+#         if self.node.getparent() is None:
+#             self.__init_attribute()
+#             return
+#         self.window_node = self.node
+#         while self.window_node.getparent().getparent() is not None:
+#             self.window_node = self.window_node.getparent()
+#         self.__refresh_attribute()
+#
+#     def __init_attribute(self):
+#         self.__attributes["text"] = str()
+#         self.__attributes["temp_id"] = str()
+#         self.__attributes["x"] = int()
+#         self.__attributes["y"] = int()
+#         self.__attributes["z"] = int()
+#         self.__attributes["center_x_to_item"] = int()
+#         self.__attributes["center_y_to_item"] = int()
+#         self.__attributes["center_x_to_global"] = int()
+#         self.__attributes["center_y_to_global"] = int()
+#         self.__attributes["height"] = int()
+#         self.__attributes["width"] = int()
+#         self.__attributes["class_name"] = str()
+#         self.__attributes["object_name"] = str()
+#         self.__attributes["opacity"] = float()
+#         self.__attributes["focus"] = bool()
+#         self.__attributes["enabled"] = bool()
+#         self.__attributes["visible"] = bool()
+#         self.__attributes["scale"] = float()
+#         self.__attributes["rotation"] = int()
+#         self.__attributes["clip"] = bool()
+#         self.__attributes["has_contents"] = bool()
+#         self.__attributes["layer_id"] = str()
+#         self.__attributes["window_title"] = str()
+#         self.__attributes["sop_id"] = str()
+#         self.__attributes["ui_app_id"] = str()
+#
+#     def __refresh_attribute(self):
+#         self.__attributes["x"] = int(round(float(self.node.get("x"))))
+#         self.__attributes["y"] = int(round(float(self.node.get("y"))))
+#         self.__attributes["center_x_to_item"] = int(round(float(self.node.get("a"))))
+#         self.__attributes["center_y_to_item"] = int(round(float(self.node.get("b"))))
+#         self.__attributes["center_x_to_global"] = int(round(float(self.node.get("d"))))
+#         self.__attributes["center_y_to_global"] = int(round(float(self.node.get("g"))))
+#         self.__attributes["z"] = int(self.node.get("z"))
+#         self.__attributes["height"] = int(round(float(self.node.get("h"))))
+#         self.__attributes["width"] = int(round(float(self.node.get("w"))))
+#         self.__attributes["temp_id"] = self.node.get("k")
+#         self.__attributes["text"] = self.node.get("t")
+#         self.__attributes["object_name"] = self.node.get("i")
+#         self.__attributes["class_name"] = self.node.tag
+#         self.__attributes["opacity"] = float(self.node.get("o"))
+#         self.__attributes["enabled"] = bool(int(self.node.get("e")))
+#         self.__attributes["visible"] = bool(int(self.node.get("v")))
+#         self.__attributes["focus"] = bool(int(self.node.get("f")))
+#         self.__attributes["scale"] = float(self.node.get("s"))
+#         self.__attributes["rotation"] = int(self.node.get("r"))
+#         self.__attributes["clip"] = bool(int(self.node.get("c")))
+#         self.__attributes["has_contents"] = bool(int(self.node.get("j")))
+#         self.__attributes["layer_id"] = self.window_node.get("layerid")
+#         self.__attributes["window_title"] = self.window_node.get("title")
+#         self.__attributes["sop_id"] = self.window_node.get("sopid")
+#         self.__attributes["ui_app_id"] = self.window_node.get("uiappid")
+#
+#     def __xml_to_html(self):
+#         self.__html_string = ""
+#         tree = xml.dom.minidom.parseString(self.device.xml_string)
+#         root = tree.documentElement
+#         if root.hasChildNodes():
+#             self.__xml_to_html_traverse(root, 0, 0, 0, True)
+#
+#     def __xml_to_html_traverse(self, node: xml.dom.minidom.Element, index_z: int, x_offset: int, y_offset: int, root: bool = False):
+#         for child in node.childNodes:
+#             height = float(child.getAttribute("h"))
+#             width = float(child.getAttribute("w"))
+#             cx = float(child.getAttribute("a"))
+#             cy = float(child.getAttribute("b"))
+#             x = cx - (width / 2) - x_offset
+#             y = cy - (height / 2) - y_offset
+#             xo = 0
+#             yo = 0
+#             if root:
+#                 xo = float(child.getAttribute("xoffset"))
+#                 yo = float(child.getAttribute("yoffset"))
+#             if float(child.getAttribute("o")) != 0 \
+#                     and int(child.getAttribute("v")) == 1 \
+#                     and child.nodeName != "QQuickShaderEffectSource":
+#                 clip = "clip:rect(auto, auto, auto, auto);" if int(child.getAttribute("c")) == 1 else ""
+#                 z = index_z + int(child.getAttribute("z"))
+#                 scale = child.getAttribute("s")
+#                 rotation = int(child.getAttribute("r"))
+#                 if int(child.getAttribute("j")) == 0:
+#                     self.__html_string += "<div style=\"position:absolute;z-index:"+str(z)+";left:"+str(x)+"px;top:"+str(y)+"px;width:"+str(width)+"px;height:"+str(height)+"px;-webkit-transform:scale("+scale+") rotate("+str(rotation)+"deg);"+clip+"\">"
+#                 else:
+#                     if child.getAttribute("k") == self.temp_id():
+#                         self.__html_string += "<div style=\"position:absolute;z-index:"+str(z)+";left:"+str(x)+"px;top:"+str(y)+"px;width:"+str(width)+"px;height:"+str(height)+"px;-webkit-transform:scale("+scale+") rotate("+str(rotation)+"deg);"+clip+"background:#F00;\">"
+#                     else:
+#                         self.__html_string += "<div style=\"position:absolute;z-index:"+str(z)+";left:"+str(x)+"px;top:"+str(y)+"px;width:"+str(width)+"px;height:"+str(height)+"px;-webkit-transform:scale("+scale+") rotate("+str(rotation)+"deg);"+clip+"background:#00F;\">"
+#                 if child.hasChildNodes():
+#                     self.__xml_to_html_traverse(child, z, xo, yo)
+#                 self.__html_string += "</div>"
+#
+#     def __exist(self):
+#         self.__refresh_node()
+#         if self.node is not None \
+#                 and self.__attributes["visible"] \
+#                 and self.__attributes["opacity"] > 0 \
+#                 and self.__attributes["scale"] != 0 \
+#                 and self.__attributes["width"] > 0 \
+#                 and self.__attributes["height"] > 0:
+#             image = []
+#             if self.device.control_host_type == Controller.ANYWHERE:
+#                 tree = xml.dom.minidom.parseString(self.device.xml_string)
+#                 for node in tree.documentElement.childNodes:
+#                     for n in node.childNodes:
+#                         if len(image) == 0:
+#                             image = self.__xml_tree_traversed(n.childNodes, 1)
+#                         else:
+#                             image = self.__img_cover(image, self.__xml_tree_traversed(n.childNodes, 1))
+#             else:
+#                 self.__xml_to_html()
+#                 if self.device.is_main:
+#                     self.device.conn_phantomjs_before()
+#                 try:
+#                     self.device.webdriver.get("data:text/html;charset=utf-8," +
+#                                               html_string_1 + str(self.__display_width) +
+#                                               html_string_2 + str(self.__display_height) +
+#                                               html_string_3 + self.__html_string +
+#                                               html_string_4)
+#                     image = cv2.imdecode(np.frombuffer(base64.b64decode(self.device.webdriver.get_screenshot_as_base64()),
+#                                                        np.uint8), cv2.COLOR_RGB2BGR)
+#                 except (cv2.error, urllib3.exceptions.ProtocolError) as e:
+#                     print(e)
+#                     if self.device.is_main:
+#                         self.device.conn_phantomjs_after()
+#                     return []
+#                 if self.device.is_main:
+#                     self.device.conn_phantomjs_after()
+#             b, g, r = cv2.split(image)
+#             if len(np.argwhere(r == 255)) > 0:
+#                 return np.argwhere(r == 255)
+#         return []
+#
+#     def parent(self, refresh: bool = False) -> 'ItemN':
+#         """
+#         获取当前ItemN对象的父对象，如没有则返回None。\n
+#         :param refresh: 是否刷新布局信息(默认值False)
+#         :return: 父亲对象或None
+#         """
+#         if refresh:
+#             self.__refresh_node()
+#         if self.node is None:
+#             return None
+#         if self.node.getparent() is None:
+#             return None
+#         return ItemN(self.device, "", self.node.getparent())
+#
+#     def children(self, filter_condition: dict = None, refresh: bool = False) -> List['ItemN']:
+#         """
+#         获取当前ItemN对象的子对象列表。\n
+#         :param filter_condition: 用于筛选子对象的属性条件字典
+#         :param refresh: 是否刷新布局信息(默认值False)
+#         :return: 子对象列表
+#         """
+#         if refresh:
+#             self.__refresh_node()
+#         children = []
+#         if self.node is None:
+#             return children
+#         if filter_condition is not None:
+#             for key in filter_condition.keys():
+#                 if key not in self.__attributes.keys():
+#                     return children
+#             for node in list(self.node):
+#                 i = ItemN(self.device, "", node)
+#                 flag = 0
+#                 for key in filter_condition.keys():
+#                     if i.attributes()[key] == filter_condition[key]:
+#                         flag += 1
+#                 if flag == len(filter_condition):
+#                     children.append(i)
+#         else:
+#             for node in list(self.node):
+#                 children.append(Item(self.device, self.sopid, "", node))
+#         return children
+#
+#     def previous(self, refresh: bool = False) -> 'ItemN':
+#         """
+#         获取当前ItemN对象的前一位兄弟对象，如没有则返回None。\n
+#         :param refresh: 是否刷新布局信息(默认值False)
+#         :return: 前一位兄弟对象或None
+#         """
+#         if refresh:
+#             self.__refresh_node()
+#         if self.node is None:
+#             return None
+#         if self.node.getparent() is None:
+#             return None
+#         return ItemN(self.device, "", self.node.getprevious())
+#
+#     def previous_by_same_tag(self, refresh: bool = False) -> 'ItemN':
+#         """
+#         获取当前ItemN对象的前一位同类兄弟对象，如没有则返回None。\n
+#         :param refresh: 是否刷新布局信息(默认值False)
+#         :return: 前一位同类兄弟对象或None
+#         """
+#         if refresh:
+#             self.__refresh_node()
+#         if self.node is None:
+#             return None
+#         if self.node.getparent() is None:
+#             return None
+#         pn = self.node.getprevious()
+#         while pn is not None:
+#             if pn.tag == self.node.tag:
+#                 return ItemN(self.device, "", pn)
+#             pn = pn.getprevious()
+#         return None
+#
+#     def next(self, refresh: bool = False) -> 'ItemN':
+#         """
+#         获取当前ItemN对象的后一位兄弟对象，如没有则返回None。\n
+#         :param refresh: 是否刷新布局信息(默认值False)
+#         :return: 后一位兄弟对象或None
+#         """
+#         if refresh:
+#             self.__refresh_node()
+#         if self.node is None:
+#             return None
+#         if self.node.getparent() is None:
+#             return None
+#         return ItemN(self.device, "", self.node.getnext())
+#
+#     def next_by_same_tag(self, refresh: bool = False) -> 'ItemN':
+#         """
+#         获取当前ItemN对象的后一位同类兄弟对象，如没有则返回None。\n
+#         :param refresh: 是否刷新布局信息(默认值False)
+#         :return: 后一位同类兄弟对象或None
+#         """
+#         if refresh:
+#             self.__refresh_node()
+#         if self.node is None:
+#             return None
+#         if self.node.getparent() is None:
+#             return None
+#         nn = self.node.getnext()
+#         while nn is not None:
+#             if nn.tag == self.node.tag:
+#                 return ItemN(self.device, "", nn)
+#             nn = nn.getnext()
+#         return None
+#
+#     def sop_id(self, refresh: bool = False) -> str:
+#         """
+#         获取元素控件所属进程的sopid。\n
+#         :param refresh: 是否刷新布局信息(默认值False)
+#         :return: sopid
+#         """
+#         if refresh:
+#             self.__refresh_node()
+#         return self.__attributes["sop_id"]
+#
+#     def ui_app_id(self, refresh: bool = False) -> str:
+#         """
+#         获取元素控件所属进程的uiappid。\n
+#         :param refresh: 是否刷新布局信息(默认值False)
+#         :return: uiappid
+#         """
+#         if refresh:
+#             self.__refresh_node()
+#         return self.__attributes["ui_app_id"]
+#
+#     def window_title(self, refresh: bool = False) -> str:
+#         """
+#         获取元素控件所属进程的窗口title。\n
+#         :param refresh: 是否刷新布局信息(默认值False)
+#         :return: 窗口title
+#         """
+#         if refresh:
+#             self.__refresh_node()
+#         return self.__attributes["window_title"]
+#
+#     def layer_id(self, refresh: bool = False) -> str:
+#         """
+#         获取元素控件所属进程的layerid。\n
+#         :param refresh: 是否刷新布局信息(默认值False)
+#         :return: 获取元素控件所属进程的layerid
+#         """
+#         if refresh:
+#             self.__refresh_node()
+#         return self.__attributes["layer_id"]

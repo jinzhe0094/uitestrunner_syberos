@@ -21,11 +21,11 @@ import socket
 import sys
 import zlib
 import threading
-import ctypes
-from ctypes import *
+# import ctypes
+# from ctypes import *
 from subprocess import *
 from .Item import Item
-from .Item import ItemN
+# from .Item import ItemN
 from .Item import compare_images
 from .Connection import Connection
 from .Events import *
@@ -47,6 +47,7 @@ from urllib.parse import quote_plus
 import cv2
 import numpy as np
 import easyocr
+from xml.etree import ElementTree
 
 
 main_conn, watcher_conn = Pipe()
@@ -58,6 +59,25 @@ mp_queue.cancel_join_thread()
 pm_queue.cancel_join_thread()
 watcher_process_list = []
 phantomjs_port = 0
+xml_key_map = {
+    'w': 'width',
+    'h': 'height',
+    's': 'scale',
+    'r': 'rotation',
+    'e': 'enable',
+    'v': 'visible',
+    'o': 'opacity',
+    'f': 'focus',
+    'c': 'clip',
+    't': 'text',
+    'a': 'centerXToItem',
+    'b': 'centerYToItem',
+    'd': 'centerXToGlobal',
+    'g': 'centerYToGlobal',
+    'i': 'objectName',
+    'j': 'hasContents',
+    'k': 'tempID',
+}
 
 
 def get_free_port():
@@ -188,7 +208,7 @@ class Device(Events):
         self.__syslog_save_name = ""
         self.__syslog_save_keyword = ""
         self.__phantomjs_name = ""
-        self.__lib_name = ""
+        # self.__lib_name = ""
         self.__width = 0
         self.__height = 0
         self.control_host_type = Controller.ANYWHERE
@@ -275,19 +295,19 @@ class Device(Events):
         if p == "Windows" and m == "AMD64":
             self.control_host_type = Controller.WINDOWS_AMD64
             self.__phantomjs_name = "win32_x86_64_phantomjs"
-            self.__lib_name = "libsimulation-rendering.dll"
+            # self.__lib_name = "libsimulation-rendering.dll"
         elif p == "Linux" and m == "x86_64":
             self.control_host_type = Controller.LINUX_X86_64
             self.__phantomjs_name = "linux_x86_64_phantomjs"
-            self.__lib_name = "libsimulation-rendering.so"
+            # self.__lib_name = "libsimulation-rendering.so"
         elif p == "Darwin" and m == "x86_64":
             self.control_host_type = Controller.DARWIN_X86_64
             self.__phantomjs_name = "darwin_x86_64_phantomjs"
-            self.__lib_name = "libsimulation-rendering.dylib"
+            # self.__lib_name = "libsimulation-rendering.dylib"
         elif p == "Darwin" and m == "arm64":
             self.control_host_type = Controller.DARWIN_ARM64
             self.__phantomjs_name = "darwin_x86_64_phantomjs"
-            self.__lib_name = "libsimulation-rendering-arm64.dylib"
+            # self.__lib_name = "libsimulation-rendering-arm64.dylib"
         self.__init_webdriver()
 
     def __init_webdriver(self):
@@ -303,9 +323,9 @@ class Device(Events):
                 self.__wd_pid = wp.pid
             else:
                 self.wd_port = phantomjs_port
-            ll = cdll.LoadLibrary
-            self.libsr = ll(self.__path + "data/" + self.__lib_name)
-            self.libsr.go.restype = ctypes.c_char_p
+            # ll = cdll.LoadLibrary
+            # self.libsr = ll(self.__path + "data/" + self.__lib_name)
+            # self.libsr.go.restype = ctypes.c_char_p
 
     def push_watcher(self, name: str, data: dict):
         main_conn.send({
@@ -602,7 +622,58 @@ class Device(Events):
         :return: 无
         """
         if self.is_main:
-            self.xml_string = str(zlib.decompress(self.con.get(path="getLayoutXML", args="compress=1").read()[4:]), 'utf-8').replace('\x08', '')
+            _fi = self.device.get_framework_info()
+            if _fi != {} and _fi['version_build'] < 260513:
+                self.xml_string = str(zlib.decompress(self.con.get(path="getLayoutXML", args="compress=1").read()[4:]), 'utf-8').replace('\x08', '')
+            else:
+                json_string = str(self.con.get(path="getLayoutXMLNew").read(), 'utf-8')
+                json_obj = json.loads(json_string)
+                _xml_string = '<?xml version="1.0" encoding="UTF-8"?><root>'
+                for i in range(len(json_obj)):
+                    data = base64.b64decode(json_obj[i]['data'])
+                    compress_size = json_obj[i]['compress_size']
+                    origin_size = json_obj[i]['origin_size']
+                    x = json_obj[i]['x']
+                    y = json_obj[i]['y']
+                    width = json_obj[i]['width']
+                    height = json_obj[i]['height']
+                    if compress_size != len(data):
+                        continue
+                    data = zlib.decompress(data[4:])
+                    if origin_size != len(data):
+                        continue
+                    data = str(data, 'utf-8').replace('\x08', '')
+                    _xml_string += '<window'
+                    _xml_string += ' sopid="' + json_obj[i]['sopid']
+                    _xml_string += '" uiappid="' + json_obj[i]['uiappid']
+                    _xml_string += '" title="' + json_obj[i]['title']
+                    _xml_string += '" layerid="' + json_obj[i]['layerid']
+                    _xml_string += '" syberdroid="' + ('1' if json_obj[i]['syberdroid'] else '0')
+                    _xml_string += '" xoffset="' + str(json_obj[i]['x_offset'])
+                    _xml_string += '" yoffset="' + str(json_obj[i]['y_offset'])
+                    _xml_string += '" window_rotation="' + str(json_obj[i]['rotation'])
+                    _xml_string += '" x="' + str(x)
+                    _xml_string += '" a="' + str(x + (width / 2))
+                    _xml_string += '" d="' + str(x + (width / 2))
+                    _xml_string += '" y="' + str(y)
+                    _xml_string += '" b="' + str(y + (height / 2))
+                    _xml_string += '" g="' + str(y + (height / 2))
+                    _xml_string += '" z="' + str(json_obj[i]['z'])
+                    _xml_string += '" w="' + str(width)
+                    _xml_string += '" h="' + str(height)
+                    _xml_string += '" r="0" s="1" e="1" v="1" o="1" i="" f="0" c="1" j="0" t="" k="window' + str(i) + '">'
+                    _xml_string += data
+                    _xml_string += '</window>'
+                _xml_string += '</root>'
+                root = ElementTree.fromstring(_xml_string)
+                for elem in root.iter():
+                    new_attrib = {}
+                    for key, value in elem.attrib.items():
+                        new_key = xml_key_map.get(key, key)
+                        new_attrib[new_key] = value
+                    elem.attrib.clear()
+                    elem.attrib.update(new_attrib)
+                self.xml_string = ElementTree.tostring(root, encoding='utf-8')
             self.__xml_time = time.time()
             watcher_xml_queue.put({'xml': self.xml_string, 'time': self.__xml_time})
         else:
@@ -616,54 +687,54 @@ class Device(Events):
                 self.xml_string = str(zlib.decompress(self.con.get(path="getLayoutXML", args="compress=1").read()[4:]), 'utf-8').replace('\x08', '')
                 self.__xml_time = time.time()
 
-    def refresh_layout_new(self) -> None:
-        """
-        刷新当前设备的UI布局信息。(新版本)\n
-        :return: 无
-        """
-        _fi = self.device.get_framework_info()
-        if _fi != {} and _fi['version_build'] < 260513:
-            return
-        if self.is_main:
-            json_string = str(self.con.get(path="getLayoutXMLNew").read(), 'utf-8')
-            json_obj = json.loads(json_string)
-            self.xml_string = '<?xml version="1.0" encoding="UTF-8"?><root>'
-            for i in range(len(json_obj)):
-                data = base64.b64decode(json_obj[i]['data'])
-                compress_size = json_obj[i]['compress_size']
-                origin_size = json_obj[i]['origin_size']
-                x = json_obj[i]['x']
-                y = json_obj[i]['y']
-                width = json_obj[i]['width']
-                height = json_obj[i]['height']
-                if compress_size != len(data):
-                    continue
-                data = zlib.decompress(data[4:])
-                if origin_size != len(data):
-                    continue
-                data = str(data, 'utf-8').replace('\x08', '')
-                self.xml_string += '<window'
-                self.xml_string += ' sopid="' + json_obj[i]['sopid']
-                self.xml_string += '" uiappid="' + json_obj[i]['uiappid']
-                self.xml_string += '" title="' + json_obj[i]['title']
-                self.xml_string += '" layerid="' + json_obj[i]['layerid']
-                self.xml_string += '" xoffset="' + str(json_obj[i]['x_offset'])
-                self.xml_string += '" yoffset="' + str(json_obj[i]['y_offset'])
-                self.xml_string += '" window_rotation="' + str(json_obj[i]['rotation'])
-                self.xml_string += '" x="' + str(x)
-                self.xml_string += '" a="' + str(x + (width / 2))
-                self.xml_string += '" d="' + str(x + (width / 2))
-                self.xml_string += '" y="' + str(y)
-                self.xml_string += '" b="' + str(y + (height / 2))
-                self.xml_string += '" g="' + str(y + (height / 2))
-                self.xml_string += '" z="' + str(json_obj[i]['z'])
-                self.xml_string += '" w="' + str(width)
-                self.xml_string += '" h="' + str(height)
-                self.xml_string += '" r="0" s="1" e="1" v="1" o="1" i="" f="0" c="1" j="0" t="" k="window' + str(i) + '">'
-                self.xml_string += data
-                self.xml_string += '</window>'
-            self.xml_string += '</root>'
-            self.__xml_time = time.time()
+    # def refresh_layout_new(self) -> None:
+    #     """
+    #     刷新当前设备的UI布局信息。(新版本)\n
+    #     :return: 无
+    #     """
+    #     _fi = self.device.get_framework_info()
+    #     if _fi != {} and _fi['version_build'] < 260513:
+    #         return
+    #     if self.is_main:
+    #         json_string = str(self.con.get(path="getLayoutXMLNew").read(), 'utf-8')
+    #         json_obj = json.loads(json_string)
+    #         self.xml_string = '<?xml version="1.0" encoding="UTF-8"?><root>'
+    #         for i in range(len(json_obj)):
+    #             data = base64.b64decode(json_obj[i]['data'])
+    #             compress_size = json_obj[i]['compress_size']
+    #             origin_size = json_obj[i]['origin_size']
+    #             x = json_obj[i]['x']
+    #             y = json_obj[i]['y']
+    #             width = json_obj[i]['width']
+    #             height = json_obj[i]['height']
+    #             if compress_size != len(data):
+    #                 continue
+    #             data = zlib.decompress(data[4:])
+    #             if origin_size != len(data):
+    #                 continue
+    #             data = str(data, 'utf-8').replace('\x08', '')
+    #             self.xml_string += '<window'
+    #             self.xml_string += ' sopid="' + json_obj[i]['sopid']
+    #             self.xml_string += '" uiappid="' + json_obj[i]['uiappid']
+    #             self.xml_string += '" title="' + json_obj[i]['title']
+    #             self.xml_string += '" layerid="' + json_obj[i]['layerid']
+    #             self.xml_string += '" xoffset="' + str(json_obj[i]['x_offset'])
+    #             self.xml_string += '" yoffset="' + str(json_obj[i]['y_offset'])
+    #             self.xml_string += '" window_rotation="' + str(json_obj[i]['rotation'])
+    #             self.xml_string += '" x="' + str(x)
+    #             self.xml_string += '" a="' + str(x + (width / 2))
+    #             self.xml_string += '" d="' + str(x + (width / 2))
+    #             self.xml_string += '" y="' + str(y)
+    #             self.xml_string += '" b="' + str(y + (height / 2))
+    #             self.xml_string += '" g="' + str(y + (height / 2))
+    #             self.xml_string += '" z="' + str(json_obj[i]['z'])
+    #             self.xml_string += '" w="' + str(width)
+    #             self.xml_string += '" h="' + str(height)
+    #             self.xml_string += '" r="0" s="1" e="1" v="1" o="1" i="" f="0" c="1" j="0" t="" k="window' + str(i) + '">'
+    #             self.xml_string += data
+    #             self.xml_string += '</window>'
+    #         self.xml_string += '</root>'
+    #         self.__xml_time = time.time()
 
     def os_version(self) -> str:
         """
@@ -690,19 +761,31 @@ class Device(Events):
         res = str(self.device.con.get(path="getPhoneNumbers").read(), 'utf-8').replace("+86", "")
         return [x for x in res.split(",") if x]
 
-    def get_topmost_info(self) -> dict:
+    def get_topmost_info(self, ignore_statusbar: bool = True, ignore_virtual_key_panel: bool = True) -> dict:
         """
         获取当前显示顶层的应用信息。\n
+        :param ignore_statusbar: 忽略状态栏层
+        :param ignore_virtual_key_panel: 忽略虚拟按键层
         :return: 字典格式的应用信息
         """
-        info = {'sopid': '', 'uiappid': '', 'syberdroid': False}
+        info = {'sopid': '', 'uiappid': '', 'layerid': '', 'title': '', 'syberdroid': False}
         for i in range(0, 10):
             try:
                 self.refresh_layout()
                 selector = etree.XML(self.xml_string.encode('utf-8'))
-                info['sopid'] = selector.get("sopId")
-                info['uiappid'] = selector.get("uiAppId")
-                info['syberdroid'] = selector.get("androidApp") == "1"
+                elem = None
+                for e in selector.findall('window'):
+                    if e.get('layerid') == 'LAYER_VIRTUAL_KEY_PANEL' and ignore_virtual_key_panel:
+                        continue
+                    if e.get('layerid') == 'LAYER_STATUSBAR' and ignore_statusbar:
+                        continue
+                    elem = e
+                if elem is not None:
+                    info['sopid'] = elem.get("sopid")
+                    info['uiappid'] = elem.get("uiappid")
+                    info['layerid'] = elem.get("layerid")
+                    info['title'] = elem.get("title")
+                    info['syberdroid'] = elem.get("syberdroid") == "1"
                 break
             except etree.XMLSyntaxError:
                 continue
@@ -728,14 +811,14 @@ class Device(Events):
         i = Item(d=self, s=sopid, xpath=xpath)
         return i
 
-    def get_item_by_xpath(self, sopid: str, xpath: str) -> ItemN:
-        """
-        获取新版元素控件实例化对象。\n
-        :param sopid: 设备应用的sopid
-        :param xpath: xpath值字符串
-        :return: ItemN对象
-        """
-        return ItemN(self, sopid, xpath)
+    # def get_item_by_xpath(self, sopid: str, xpath: str) -> ItemN:
+    #     """
+    #     获取新版元素控件实例化对象。\n
+    #     :param sopid: 设备应用的sopid
+    #     :param xpath: xpath值字符串
+    #     :return: ItemN对象
+    #     """
+    #     return ItemN(self, sopid, xpath)
 
     def get_text_item_list_full_screen(self, rotation: int = None) -> List[TextItemFromOcr]:
         """
