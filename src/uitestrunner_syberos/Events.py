@@ -812,7 +812,7 @@ class Events:
                     else:
                         if syberdroid and topmost_info['syberdroid'] and topmost_info['sopid'] == "com.android.permissioncontroller":
                             return True
-                        if not syberdroid and topmost_info['syberdroid'] and topmost_info['sopid'] == "systemui(PCL)":
+                        if not syberdroid and not topmost_info['syberdroid'] and topmost_info['sopid'] == "systemui(PCL)":
                             return True
                     break
                 except etree.XMLSyntaxError:

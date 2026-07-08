@@ -673,6 +673,7 @@ class Device(Events):
                     _xml_string += data
                     _xml_string += '</window>'
                 _xml_string += '</root>'
+                break
             except KeyError:
                 continue
         root = ElementTree.fromstring(_xml_string)
@@ -728,7 +729,11 @@ class Device(Events):
                         continue
                     if e.get('layerid') == 'LAYER_STATUSBAR' and ignore_statusbar:
                         continue
-                    elem = e
+                    if elem is not None:
+                        if int(e.get('z')) > int(elem.get('z')):
+                            elem = e
+                    else:
+                        elem = e
                 if elem is not None:
                     info['sopid'] = elem.get("sopid")
                     info['uiappid'] = elem.get("uiappid")
