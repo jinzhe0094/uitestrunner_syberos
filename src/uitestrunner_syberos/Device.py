@@ -631,45 +631,50 @@ class Device(Events):
             if data['time'] > self.__xml_time:
                 self.xml_string = data['xml']
                 self.__xml_time = data['time']
-        json_string = str(self.con.get(path="getLayoutXMLNew").read(), 'utf-8')
-        json_obj = json.loads(json_string)
-        _xml_string = '<?xml version="1.0" encoding="UTF-8"?><root>'
-        for i in range(len(json_obj)):
-            data = base64.b64decode(json_obj[i]['data'])
-            compress_size = json_obj[i]['compress_size']
-            origin_size = json_obj[i]['origin_size']
-            x = json_obj[i]['x']
-            y = json_obj[i]['y']
-            width = json_obj[i]['width']
-            height = json_obj[i]['height']
-            if compress_size != len(data):
+        _xml_string = ''
+        for i in range(0, 10):
+            try:
+                json_string = str(self.con.get(path="getLayoutXMLNew").read(), 'utf-8')
+                json_obj = json.loads(json_string)
+                _xml_string = '<?xml version="1.0" encoding="UTF-8"?><root>'
+                for i in range(len(json_obj)):
+                    data = base64.b64decode(json_obj[i]['data'])
+                    compress_size = json_obj[i]['compress_size']
+                    origin_size = json_obj[i]['origin_size']
+                    x = json_obj[i]['x']
+                    y = json_obj[i]['y']
+                    width = json_obj[i]['width']
+                    height = json_obj[i]['height']
+                    if compress_size != len(data):
+                        continue
+                    data = zlib.decompress(data[4:])
+                    if origin_size != len(data):
+                        continue
+                    data = str(data, 'utf-8').replace('\x08', '')
+                    _xml_string += '<window'
+                    _xml_string += ' sopid="' + json_obj[i]['sopid']
+                    _xml_string += '" uiappid="' + json_obj[i]['uiappid']
+                    _xml_string += '" title="' + json_obj[i]['title']
+                    _xml_string += '" layerid="' + json_obj[i]['layerid']
+                    _xml_string += '" syberdroid="' + ('1' if json_obj[i]['syberdroid'] else '0')
+                    _xml_string += '" xoffset="' + str(json_obj[i]['x_offset'])
+                    _xml_string += '" yoffset="' + str(json_obj[i]['y_offset'])
+                    _xml_string += '" window_rotation="' + str(json_obj[i]['rotation'])
+                    _xml_string += '" x="' + str(x)
+                    _xml_string += '" a="' + str(x + (width / 2))
+                    _xml_string += '" d="' + str(x + (width / 2))
+                    _xml_string += '" y="' + str(y)
+                    _xml_string += '" b="' + str(y + (height / 2))
+                    _xml_string += '" g="' + str(y + (height / 2))
+                    _xml_string += '" z="' + str(json_obj[i]['z'])
+                    _xml_string += '" w="' + str(width)
+                    _xml_string += '" h="' + str(height)
+                    _xml_string += '" r="0" s="1" e="1" v="1" o="1" i="" f="0" c="1" j="0" t="" k="window' + str(i) + '">'
+                    _xml_string += data
+                    _xml_string += '</window>'
+                _xml_string += '</root>'
+            except KeyError:
                 continue
-            data = zlib.decompress(data[4:])
-            if origin_size != len(data):
-                continue
-            data = str(data, 'utf-8').replace('\x08', '')
-            _xml_string += '<window'
-            _xml_string += ' sopid="' + json_obj[i]['sopid']
-            _xml_string += '" uiappid="' + json_obj[i]['uiappid']
-            _xml_string += '" title="' + json_obj[i]['title']
-            _xml_string += '" layerid="' + json_obj[i]['layerid']
-            _xml_string += '" syberdroid="' + ('1' if json_obj[i]['syberdroid'] else '0')
-            _xml_string += '" xoffset="' + str(json_obj[i]['x_offset'])
-            _xml_string += '" yoffset="' + str(json_obj[i]['y_offset'])
-            _xml_string += '" window_rotation="' + str(json_obj[i]['rotation'])
-            _xml_string += '" x="' + str(x)
-            _xml_string += '" a="' + str(x + (width / 2))
-            _xml_string += '" d="' + str(x + (width / 2))
-            _xml_string += '" y="' + str(y)
-            _xml_string += '" b="' + str(y + (height / 2))
-            _xml_string += '" g="' + str(y + (height / 2))
-            _xml_string += '" z="' + str(json_obj[i]['z'])
-            _xml_string += '" w="' + str(width)
-            _xml_string += '" h="' + str(height)
-            _xml_string += '" r="0" s="1" e="1" v="1" o="1" i="" f="0" c="1" j="0" t="" k="window' + str(i) + '">'
-            _xml_string += data
-            _xml_string += '</window>'
-        _xml_string += '</root>'
         root = ElementTree.fromstring(_xml_string)
         for elem in root.iter():
             new_attrib = {}

@@ -219,7 +219,6 @@ class Item:
     __html_string = ""
 
     def __init__(self, d: Device, s: str = "", xpath: str = "", node=None):
-        self.window_node = self.node
         self.rect = []
         self.__attributes = {}
         self.__absolute_xpath = ""
@@ -230,6 +229,7 @@ class Item:
         self.__display_height = self.device.display_height()
         self.xpath = xpath
         self.node = node
+        self.window_node = self.node
         self.__refresh_node()
 
     def __generate_absolute_xpath(self, node):
