@@ -261,7 +261,7 @@ class Item:
             self.window_node = None
             for i in range(0, 10):
                 try:
-                    selector = etree.XML(self.device.xml_string.encode('utf-8'))
+                    selector = etree.XML(self.device.xml_string)
                     nodes = selector.xpath(self.xpath)
                     for node in nodes:
                         window_node = node

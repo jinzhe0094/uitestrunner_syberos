@@ -264,7 +264,7 @@ class Device(Events):
         if self.control_host_type != Controller.ANYWHERE:
             self.webdriver = webdriver.WebDriver(command_executor='http://127.0.0.1:' + str(self.wd_port) + '/wd/hub')
         self.refresh_layout()
-        _fi = self.device.get_framework_info()
+        _fi = self.get_framework_info()
         if _fi != {} and _fi['version_build'] < 260513:
             exit("当前设备版本过低，请升级至最新版本！")
 
@@ -624,67 +624,64 @@ class Device(Events):
         刷新当前设备的UI布局信息。\n
         :return: 无
         """
-        if self.is_main:
-            json_string = str(self.con.get(path="getLayoutXMLNew").read(), 'utf-8')
-            json_obj = json.loads(json_string)
-            _xml_string = '<?xml version="1.0" encoding="UTF-8"?><root>'
-            for i in range(len(json_obj)):
-                data = base64.b64decode(json_obj[i]['data'])
-                compress_size = json_obj[i]['compress_size']
-                origin_size = json_obj[i]['origin_size']
-                x = json_obj[i]['x']
-                y = json_obj[i]['y']
-                width = json_obj[i]['width']
-                height = json_obj[i]['height']
-                if compress_size != len(data):
-                    continue
-                data = zlib.decompress(data[4:])
-                if origin_size != len(data):
-                    continue
-                data = str(data, 'utf-8').replace('\x08', '')
-                _xml_string += '<window'
-                _xml_string += ' sopid="' + json_obj[i]['sopid']
-                _xml_string += '" uiappid="' + json_obj[i]['uiappid']
-                _xml_string += '" title="' + json_obj[i]['title']
-                _xml_string += '" layerid="' + json_obj[i]['layerid']
-                _xml_string += '" syberdroid="' + ('1' if json_obj[i]['syberdroid'] else '0')
-                _xml_string += '" xoffset="' + str(json_obj[i]['x_offset'])
-                _xml_string += '" yoffset="' + str(json_obj[i]['y_offset'])
-                _xml_string += '" window_rotation="' + str(json_obj[i]['rotation'])
-                _xml_string += '" x="' + str(x)
-                _xml_string += '" a="' + str(x + (width / 2))
-                _xml_string += '" d="' + str(x + (width / 2))
-                _xml_string += '" y="' + str(y)
-                _xml_string += '" b="' + str(y + (height / 2))
-                _xml_string += '" g="' + str(y + (height / 2))
-                _xml_string += '" z="' + str(json_obj[i]['z'])
-                _xml_string += '" w="' + str(width)
-                _xml_string += '" h="' + str(height)
-                _xml_string += '" r="0" s="1" e="1" v="1" o="1" i="" f="0" c="1" j="0" t="" k="window' + str(i) + '">'
-                _xml_string += data
-                _xml_string += '</window>'
-            _xml_string += '</root>'
-            root = ElementTree.fromstring(_xml_string)
-            for elem in root.iter():
-                new_attrib = {}
-                for key, value in elem.attrib.items():
-                    new_key = xml_key_map.get(key, key)
-                    new_attrib[new_key] = value
-                elem.attrib.clear()
-                elem.attrib.update(new_attrib)
-            self.xml_string = ElementTree.tostring(root, encoding='utf-8')
-            self.__xml_time = time.time()
-            watcher_xml_queue.put({'xml': self.xml_string, 'time': self.__xml_time})
-        else:
+        if not self.is_main:
             data = {'xml': '', 'time': 0}
             while not self.__xml_queue.empty():
                 data = self.__xml_queue.get()
             if data['time'] > self.__xml_time:
                 self.xml_string = data['xml']
                 self.__xml_time = data['time']
-            else:
-                self.xml_string = str(zlib.decompress(self.con.get(path="getLayoutXML", args="compress=1").read()[4:]), 'utf-8').replace('\x08', '')
-                self.__xml_time = time.time()
+        json_string = str(self.con.get(path="getLayoutXMLNew").read(), 'utf-8')
+        json_obj = json.loads(json_string)
+        _xml_string = '<?xml version="1.0" encoding="UTF-8"?><root>'
+        for i in range(len(json_obj)):
+            data = base64.b64decode(json_obj[i]['data'])
+            compress_size = json_obj[i]['compress_size']
+            origin_size = json_obj[i]['origin_size']
+            x = json_obj[i]['x']
+            y = json_obj[i]['y']
+            width = json_obj[i]['width']
+            height = json_obj[i]['height']
+            if compress_size != len(data):
+                continue
+            data = zlib.decompress(data[4:])
+            if origin_size != len(data):
+                continue
+            data = str(data, 'utf-8').replace('\x08', '')
+            _xml_string += '<window'
+            _xml_string += ' sopid="' + json_obj[i]['sopid']
+            _xml_string += '" uiappid="' + json_obj[i]['uiappid']
+            _xml_string += '" title="' + json_obj[i]['title']
+            _xml_string += '" layerid="' + json_obj[i]['layerid']
+            _xml_string += '" syberdroid="' + ('1' if json_obj[i]['syberdroid'] else '0')
+            _xml_string += '" xoffset="' + str(json_obj[i]['x_offset'])
+            _xml_string += '" yoffset="' + str(json_obj[i]['y_offset'])
+            _xml_string += '" window_rotation="' + str(json_obj[i]['rotation'])
+            _xml_string += '" x="' + str(x)
+            _xml_string += '" a="' + str(x + (width / 2))
+            _xml_string += '" d="' + str(x + (width / 2))
+            _xml_string += '" y="' + str(y)
+            _xml_string += '" b="' + str(y + (height / 2))
+            _xml_string += '" g="' + str(y + (height / 2))
+            _xml_string += '" z="' + str(json_obj[i]['z'])
+            _xml_string += '" w="' + str(width)
+            _xml_string += '" h="' + str(height)
+            _xml_string += '" r="0" s="1" e="1" v="1" o="1" i="" f="0" c="1" j="0" t="" k="window' + str(i) + '">'
+            _xml_string += data
+            _xml_string += '</window>'
+        _xml_string += '</root>'
+        root = ElementTree.fromstring(_xml_string)
+        for elem in root.iter():
+            new_attrib = {}
+            for key, value in elem.attrib.items():
+                new_key = xml_key_map.get(key, key)
+                new_attrib[new_key] = value
+            elem.attrib.clear()
+            elem.attrib.update(new_attrib)
+        self.xml_string = ElementTree.tostring(root, encoding='utf-8')
+        self.__xml_time = time.time()
+        if self.is_main:
+            watcher_xml_queue.put({'xml': self.xml_string, 'time': self.__xml_time})
 
     def os_version(self) -> str:
         """
@@ -719,7 +716,7 @@ class Device(Events):
         for i in range(0, 10):
             try:
                 self.refresh_layout()
-                selector = etree.XML(self.xml_string.encode('utf-8'))
+                selector = etree.XML(self.xml_string)
                 elem = None
                 for e in selector.findall('window'):
                     if e.get('layerid') == 'LAYER_VIRTUAL_KEY_PANEL' and ignore_virtual_key_panel:

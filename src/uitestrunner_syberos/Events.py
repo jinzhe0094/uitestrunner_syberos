@@ -450,7 +450,7 @@ class Events:
                 for i in range(0, 10):
                     try:
                         self.device.refresh_layout()
-                        selector = etree.XML(self.device.xml_string.encode('utf-8'))
+                        selector = etree.XML(self.device.xml_string)
                         if selector.get("sopId") == "home-screen(FAKE_VALUE)":
                             return True
                         else:
