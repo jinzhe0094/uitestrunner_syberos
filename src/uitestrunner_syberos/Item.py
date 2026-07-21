@@ -307,7 +307,12 @@ class Item:
         self.__attributes["visible"] = bool(int(self.node.get("visible")))
         self.__attributes["focus"] = bool(int(self.node.get("focus")))
         self.__attributes["scale"] = float(self.node.get("scale"))
-        self.__attributes["rotation"] = int(self.node.get("rotation"))
+        self.parent_node = self.node.getparent()
+        rotation = int(self.node.get("rotation")) + int(self.parent_node.get("rotation"))
+        while self.parent_node.getparent().getparent() is not None:
+            self.parent_node = self.parent_node.getparent()
+            rotation += int(self.parent_node.get("rotation"))
+        self.__attributes["rotation"] = rotation
         self.__attributes["clip"] = bool(int(self.node.get("clip")))
         self.__attributes["has_contents"] = bool(int(self.node.get("hasContents")))
         self.__attributes["layer_id"] = self.window_node.get("layerid")
