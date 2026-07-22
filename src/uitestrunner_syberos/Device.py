@@ -179,9 +179,9 @@ def _init_ocr_models(p: str):
     Path(p + "finish").touch()
 
 
-def _add_absolute_rotation(node, parent_absolute_rotation: int = 0):
+def _add_absolute_rotation(node, parent_absolute_rotation: float = 0.0):
     rotation_attr = node.get('r')
-    relative_rotation = int(rotation_attr) if rotation_attr is not None else 0
+    relative_rotation = float(rotation_attr) if rotation_attr is not None else 0.0
     absolute_rotation = parent_absolute_rotation + relative_rotation
     node.set('l', str(absolute_rotation))
     for child in node:
