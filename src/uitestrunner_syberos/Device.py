@@ -21,11 +21,8 @@ import socket
 import sys
 import zlib
 import threading
-# import ctypes
-# from ctypes import *
 from subprocess import *
 from .Item import Item
-# from .Item import ItemN
 from .Item import compare_images
 from .Connection import Connection
 from .Events import *
@@ -63,7 +60,7 @@ xml_key_map = {
     'w': 'width',
     'h': 'height',
     's': 'scale',
-    'r': 'rotation',
+    'r': 'relative_rotation',
     'e': 'enabled',
     'v': 'visible',
     'o': 'opacity',
@@ -77,6 +74,7 @@ xml_key_map = {
     'i': 'objectName',
     'j': 'hasContents',
     'k': 'tempID',
+    'l': 'rotation',
 }
 
 
@@ -181,6 +179,15 @@ def _init_ocr_models(p: str):
     Path(p + "finish").touch()
 
 
+def _add_absolute_rotation(node, parent_absolute_rotation: int = 0):
+    rotation_attr = node.get('r')
+    relative_rotation = int(rotation_attr) if rotation_attr is not None else 0
+    absolute_rotation = parent_absolute_rotation + relative_rotation
+    node.set('l', str(absolute_rotation))
+    for child in node:
+        _add_absolute_rotation(child, absolute_rotation)
+
+
 class Device(Events):
     """
     Device初始化，获取设备初始信息，创建相关子线程与子进程等。\n
@@ -208,7 +215,6 @@ class Device(Events):
         self.__syslog_save_name = ""
         self.__syslog_save_keyword = ""
         self.__phantomjs_name = ""
-        # self.__lib_name = ""
         self.__width = 0
         self.__height = 0
         self.control_host_type = Controller.ANYWHERE
@@ -298,19 +304,15 @@ class Device(Events):
         if p == "Windows" and m == "AMD64":
             self.control_host_type = Controller.WINDOWS_AMD64
             self.__phantomjs_name = "win32_x86_64_phantomjs"
-            # self.__lib_name = "libsimulation-rendering.dll"
         elif p == "Linux" and m == "x86_64":
             self.control_host_type = Controller.LINUX_X86_64
             self.__phantomjs_name = "linux_x86_64_phantomjs"
-            # self.__lib_name = "libsimulation-rendering.so"
         elif p == "Darwin" and m == "x86_64":
             self.control_host_type = Controller.DARWIN_X86_64
             self.__phantomjs_name = "darwin_x86_64_phantomjs"
-            # self.__lib_name = "libsimulation-rendering.dylib"
         elif p == "Darwin" and m == "arm64":
             self.control_host_type = Controller.DARWIN_ARM64
             self.__phantomjs_name = "darwin_x86_64_phantomjs"
-            # self.__lib_name = "libsimulation-rendering-arm64.dylib"
         self.__init_webdriver()
 
     def __init_webdriver(self):
@@ -326,9 +328,6 @@ class Device(Events):
                 self.__wd_pid = wp.pid
             else:
                 self.wd_port = phantomjs_port
-            # ll = cdll.LoadLibrary
-            # self.libsr = ll(self.__path + "data/" + self.__lib_name)
-            # self.libsr.go.restype = ctypes.c_char_p
 
     def push_watcher(self, name: str, data: dict):
         main_conn.send({
@@ -677,6 +676,7 @@ class Device(Events):
             except KeyError:
                 continue
         root = ElementTree.fromstring(_xml_string)
+        _add_absolute_rotation(root)
         for elem in root.iter():
             new_attrib = {}
             for key, value in elem.attrib.items():

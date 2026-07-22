@@ -307,12 +307,7 @@ class Item:
         self.__attributes["visible"] = bool(int(self.node.get("visible")))
         self.__attributes["focus"] = bool(int(self.node.get("focus")))
         self.__attributes["scale"] = float(self.node.get("scale"))
-        self.parent_node = self.node.getparent()
-        rotation = int(self.node.get("rotation")) + int(self.parent_node.get("rotation"))
-        while self.parent_node.getparent().getparent() is not None:
-            self.parent_node = self.parent_node.getparent()
-            rotation += int(self.parent_node.get("rotation"))
-        self.__attributes["rotation"] = rotation
+        self.__attributes["rotation"] = int(self.node.get("rotation"))
         self.__attributes["clip"] = bool(int(self.node.get("clip")))
         self.__attributes["has_contents"] = bool(int(self.node.get("hasContents")))
         self.__attributes["layer_id"] = self.window_node.get("layerid")
@@ -766,7 +761,7 @@ class Item:
                 clip = "clip:rect(auto, auto, auto, auto);" if int(child.getAttribute("clip")) == 1 else ""
                 z = index_z + int(child.getAttribute("z"))
                 scale = child.getAttribute("scale")
-                rotation = int(child.getAttribute("rotation"))
+                rotation = int(child.getAttribute("relative_rotation"))
                 if int(child.getAttribute("hasContents")) == 0:
                     self.__html_string += "<div style=\"position:absolute;z-index:"+str(z)+";left:"+str(x)+"px;top:"+str(y)+"px;width:"+str(width)+"px;height:"+str(height)+"px;-webkit-transform:scale("+scale+") rotate("+str(rotation)+"deg);"+clip+"\">"
                 else:
