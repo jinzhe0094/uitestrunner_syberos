@@ -449,9 +449,8 @@ class Events:
             if self.__reply_status_check(self.device.con.get(path="sendHomeKeyEvent")):
                 for i in range(0, 10):
                     try:
-                        self.device.refresh_layout()
-                        selector = etree.XML(self.device.xml_string)
-                        if selector.get("sopId") == "home-screen(FAKE_VALUE)":
+                        topmost_info = self.device.get_topmost_info()
+                        if topmost_info['sopid'] == "home-screen(PCL)":
                             return True
                         else:
                             self.device.con.get(path="sendHomeKeyEvent")
