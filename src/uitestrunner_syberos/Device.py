@@ -675,7 +675,11 @@ class Device(Events):
                 break
             except KeyError:
                 continue
-        root = ElementTree.fromstring(_xml_string)
+        pattern = re.compile(
+            r'[^\x09\x0A\x0D\x20-\uD7FF\uE000-\uFFFD'
+            r'\U00010000-\U0010FFFF]'
+        )
+        root = ElementTree.fromstring(pattern.sub('', _xml_string))
         _add_absolute_rotation(root)
         for elem in root.iter():
             new_attrib = {}
