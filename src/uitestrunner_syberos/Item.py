@@ -27,7 +27,7 @@ import numpy as np
 from time import sleep
 from .DataStruct import *
 from . import Device
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 
 html_string_1 = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><title>render" \
@@ -211,14 +211,15 @@ class Item:
     元素控件类，通过Device.find_item_by_xpath_key()与Device.find_item_by_xpath()两个接口结果返回实例化对象，不推荐单独使用。\n
     :ivar sopid: 元素控件所在的应用sopid
     :ivar device: 实例化的Device对象
-    :ivar node: 对应的xml节点对象
     :ivar xpath: xpath字符串
+    :ivar ignore_xpath: 忽略元素xpath列表
+    :ivar node: 对应的xml节点对象
     """
     __display_width = 0
     __display_height = 0
     __html_string = ""
 
-    def __init__(self, d: Device, s: str = "", xpath: str = "", node=None):
+    def __init__(self, d: Device, s: str = "", xpath: str = "", ignore_xpath: List[Tuple[str, str]] = None, node=None):
         self.rect = []
         self.__attributes = {}
         self.__absolute_xpath = ""
@@ -228,6 +229,11 @@ class Item:
         self.__display_width = self.device.display_width()
         self.__display_height = self.device.display_height()
         self.xpath = xpath
+        if ignore_xpath is None:
+            self.__ignore_xpath = ignore_xpath
+        else:
+            self.__ignore_xpath = []
+        self.__ignore_temp_id = []
         self.node = node
         self.window_node = self.node
         self.__refresh_node()
@@ -269,6 +275,15 @@ class Item:
                             window_node = window_node.getparent()
                         if window_node.get("sopid") == self.sopid or self.sopid == "":
                             self.node = node
+                            for sop_id, xpath in self.__ignore_xpath:
+                                nodes = selector.xpath(xpath)
+                                for n in nodes:
+                                    window_node = n
+                                    while window_node.getparent().getparent() is not None:
+                                        window_node = window_node.getparent()
+                                    if window_node.get("sopid") == sop_id or sop_id == "":
+                                        self.__ignore_temp_id.append(n.get("tempID"))
+                                        break
                             break
                     break
                 except etree.XMLSyntaxError:
@@ -364,7 +379,7 @@ class Item:
             return None
         if self.node.getparent() is None:
             return None
-        return Item(self.device, self.sopid, "", self.node.getparent())
+        return Item(self.device, self.sopid, "", self.__ignore_xpath, self.node.getparent())
 
     def children(self, filter_condition: dict = None, refresh: bool = False) -> List['Item']:
         """
@@ -383,7 +398,7 @@ class Item:
                 if key not in self.__attributes.keys():
                     return children
             for node in list(self.node):
-                i = Item(self.device, self.sopid, "", node)
+                i = Item(self.device, self.sopid, "", self.__ignore_xpath, node)
                 flag = 0
                 for key in filter_condition.keys():
                     if i.attributes()[key] == filter_condition[key]:
@@ -392,7 +407,7 @@ class Item:
                     children.append(i)
         else:
             for node in list(self.node):
-                children.append(Item(self.device, self.sopid, "", node))
+                children.append(Item(self.device, self.sopid, "", self.__ignore_xpath, node))
         return children
 
     def previous(self, refresh: bool = False) -> 'Item':
@@ -407,7 +422,7 @@ class Item:
             return None
         if self.node.getparent() is None:
             return None
-        return Item(self.device, self.sopid, "", self.node.getprevious())
+        return Item(self.device, self.sopid, "", self.__ignore_xpath, self.node.getprevious())
 
     def previous_by_same_tag(self, refresh: bool = False) -> 'Item':
         """
@@ -424,7 +439,7 @@ class Item:
         pn = self.node.getprevious()
         while pn is not None:
             if pn.tag == self.node.tag:
-                return Item(self.device, self.sopid, "", pn)
+                return Item(self.device, self.sopid, "", self.__ignore_xpath, pn)
             pn = pn.getprevious()
         return None
 
@@ -440,7 +455,7 @@ class Item:
             return None
         if self.node.getparent() is None:
             return None
-        return Item(self.device, self.sopid, "", self.node.getnext())
+        return Item(self.device, self.sopid, "", self.__ignore_xpath, self.node.getnext())
 
     def next_by_same_tag(self, refresh: bool = False) -> 'Item':
         """
@@ -457,7 +472,7 @@ class Item:
         nn = self.node.getnext()
         while nn is not None:
             if nn.tag == self.node.tag:
-                return Item(self.device, self.sopid, "", nn)
+                return Item(self.device, self.sopid, "", self.__ignore_xpath, nn)
             nn = nn.getnext()
         return None
 
@@ -757,7 +772,8 @@ class Item:
                 yo = float(child.getAttribute("yoffset"))
             if float(child.getAttribute("opacity")) != 0 \
                     and int(child.getAttribute("visible")) == 1 \
-                    and child.nodeName != "QQuickShaderEffectSource":
+                    and child.nodeName != "QQuickShaderEffectSource" \
+                    and child.getAttribute("tempID") not in self.__ignore_temp_id:
                 clip = "clip:rect(auto, auto, auto, auto);" if int(child.getAttribute("clip")) == 1 else ""
                 z = index_z + int(child.getAttribute("z"))
                 scale = child.getAttribute("scale")
@@ -809,10 +825,6 @@ class Item:
                         else:
                             image = self.__img_cover(image, self.__xml_tree_traversed(n.childNodes, 1))
             else:
-                # html_string = self.device.libsr.go(c_char_p(bytes(self.device.xml_string, "utf-8")),
-                #                                    c_char_p(bytes(self.__attributes["temp_id"], "utf-8")),
-                #                                    c_int(self.__display_width),
-                #                                    c_int(self.__display_height))
                 self.__xml_to_html()
                 if self.device.is_main:
                     self.device.conn_phantomjs_before()
