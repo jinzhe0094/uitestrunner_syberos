@@ -33,7 +33,7 @@ import psutil
 import warnings
 from .TextItemFromOcr import *
 from PIL import Image
-from typing import List
+from typing import List, Tuple
 import ocrCraftModel4uts
 import ocrLangModel4uts
 import shutil
@@ -755,24 +755,16 @@ class Device(Events):
         i = Item(d=self, s=sopid, xpath=self.get_xpath(sopid, xpath_key))
         return i
 
-    def find_item_by_xpath(self, sopid: str, xpath: str) -> Item:
+    def find_item_by_xpath(self, sopid: str, xpath: str, ignore_xpath: List[Tuple[str, str]] = None) -> Item:
         """
         获取元素控件实例化对象。\n
         :param sopid: 设备应用的sopid
         :param xpath: xpath值字符串
+        :param ignore_xpath: 忽略元素xpath列表
         :return: Item对象
         """
-        i = Item(d=self, s=sopid, xpath=xpath)
+        i = Item(d=self, s=sopid, xpath=xpath, ignore_xpath=ignore_xpath)
         return i
-
-    # def get_item_by_xpath(self, sopid: str, xpath: str) -> ItemN:
-    #     """
-    #     获取新版元素控件实例化对象。\n
-    #     :param sopid: 设备应用的sopid
-    #     :param xpath: xpath值字符串
-    #     :return: ItemN对象
-    #     """
-    #     return ItemN(self, sopid, xpath)
 
     def get_text_item_list_full_screen(self, rotation: int = None) -> List[TextItemFromOcr]:
         """

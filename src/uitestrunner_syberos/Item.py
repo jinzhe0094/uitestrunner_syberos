@@ -229,7 +229,7 @@ class Item:
         self.__display_width = self.device.display_width()
         self.__display_height = self.device.display_height()
         self.xpath = xpath
-        if ignore_xpath is None:
+        if ignore_xpath is not None:
             self.__ignore_xpath = ignore_xpath
         else:
             self.__ignore_xpath = []
