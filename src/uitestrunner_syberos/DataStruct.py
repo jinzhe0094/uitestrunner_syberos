@@ -369,3 +369,29 @@ class SystemDateFormat(enum.Enum):
     DATE_FORMAT_YYYY_MM_DD = 0
     DATE_FORMAT_MM_DD_YYYY = 1
     DATE_FORMAT_DD_MM_YYYY = 2
+
+
+class CallLogType(enum.Enum):
+    """
+    通话记录类型。\n
+    :ivar OUT: 来电
+    :ivar IN: 去电
+    :ivar MISS_READ: 未接已读
+    :ivar MISS_UNREAD: 未接未读
+    """
+    OUT = "out"
+    IN = "in"
+    MISS_READ = "missedRead"
+    MISS_UNREAD = "missedUnread"
+
+
+class MessageType(enum.Enum):
+    """
+    消息类型。\n
+    :ivar OUT: 发送
+    :ivar IN_READ: 接收已读
+    :ivar IN_UNREAD: 接收未读
+    """
+    OUT = "out"
+    IN_READ = "inRead"
+    IN_UNREAD = "inUnread"

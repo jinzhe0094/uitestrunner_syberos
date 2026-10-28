@@ -1257,3 +1257,52 @@ class Events:
         if updateid in self.__stay_notify_list:
             return bool(int(self.device.con.get(path="removeNotification", args="update_id=" + updateid + "&sopid=" + self.__stay_notify_list[updateid]).read()))
         return bool(int(self.device.con.get(path="removeNotification", args="update_id=" + updateid).read()))
+
+    def clear_all_contacts(self) -> bool:
+        """
+        清除所有联系人。\n
+        :return: 清除成功返回True，否则为False
+        """
+        return bool(int(self.device.con.get(path="clearAllContacts").read()))
+
+    def add_contact(self, name: str, number: str) -> bool:
+        """
+        添加联系人。\n
+        :param name: 联系人名称
+        :param number: 联系人号码
+        :return: 添加成功返回True，否则为False
+        """
+        return bool(int(self.device.con.get(path="addContact", args="name=" + urllib.parse.quote(name) + "&number=" + urllib.parse.quote(number)).read()))
+
+    def clear_all_call_logs(self) -> bool:
+        """
+        清除所有通话记录。\n
+        :return: 清除成功返回True，否则为False
+        """
+        return bool(int(self.device.con.get(path="clearAllCalllogs").read()))
+
+    def add_call_log(self, number: str, call_type: CallLogType) -> bool:
+        """
+        添加通话记录。\n
+        :param number: 通话记录号码
+        :param call_type: 通话记录类型
+        :return: 添加成功返回True，否则为False
+        """
+        return bool(int(self.device.con.get(path="addCalllog", args="number=" + urllib.parse.quote(number) + "&type=" + call_type.value).read()))
+
+    def clear_all_messages(self) -> bool:
+        """
+        清除所有消息。\n
+        :return: 清除成功返回True，否则为False
+        """
+        return bool(int(self.device.con.get(path="clearAllMessages").read()))
+
+    def add_message(self, number: str, message: str, msg_type: MessageType) -> bool:
+        """
+        添加消息。\n
+        :param number: 消息号码
+        :param message: 消息内容
+        :param msg_type: 消息类型
+        :return: 添加成功返回True，否则为False
+        """
+        return bool(int(self.device.con.get(path="addMessage", args="number=" + urllib.parse.quote(number) + "&text=" + urllib.parse.quote(message) + "&type=" + msg_type.value).read()))
